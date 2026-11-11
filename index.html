@@ -431,25 +431,29 @@
 
             // --- PUBLIC FORM STATES ---
             const [gbForm, setGbForm] = useState({ name: '', agency: '', purpose: '' });
-            const handleGbSubmit = (e) => {
+            const handleGbSubmit = async (e) => {
                 e.preventDefault();
                 if (!gbForm.name || !gbForm.purpose) {
                     showToast('Mohon lengkapi Nama dan Maksud Kunjungan!', 'error');
                     return;
                 }
-                const newEntry = {
-                    id: `GB-${Date.now().toString().slice(-3)}`,
-                    date: new Date().toISOString().replace('T', ' ').slice(0, 16),
-                    name: gbForm.name,
-                    agency: gbForm.agency || 'Umum / Pribadi',
-                    purpose: gbForm.purpose,
-                    phone: '-',
-                    status: 'Terverifikasi',
+                const payload = {
+                    name: gbForm.name.trim(),
+                    agency: gbForm.agency.trim() || 'Umum / Pribadi',
+                    purpose: gbForm.purpose.trim(),
+                    status: 'Menunggu Verifikasi',
                     receiver: 'Petugas Front Desk'
                 };
-                setGuestbookList([newEntry, ...guestbookList]);
+                const { data, error } = await supabaseClient
+                    .from('buku_tamu').insert(payload).select().single();
+                if (error) {
+                    console.error('Gagal menyimpan buku tamu:', error.message);
+                    showToast('Buku tamu belum tersimpan. Periksa tabel dan kebijakan Supabase.', 'error');
+                    return;
+                }
+                setGuestbookList((prev) => [data, ...prev]);
                 setGbForm({ name: '', agency: '', purpose: '' });
-                showToast('Terima kasih! Bukti kunjungan digital berhasil dicatat.');
+                showToast('Terima kasih! Data kunjungan berhasil disimpan.');
             };
 
             // Public Complaint Form
@@ -463,64 +467,44 @@
             });
             const [submittedTicketResult, setSubmittedTicketResult] = useState(null);
 
-            const handlePublicSubmit = (e) => {
+            const handlePublicSubmit = async (e) => {
                 e.preventDefault();
                 if (!publicForm.judul || !publicForm.deskripsi) {
                     showToast('Mohon isi Judul dan Isi Laporan!', 'error');
                     return;
                 }
-
                 const randomNum = Math.floor(1000 + Math.random() * 9000);
                 const accessCode = Math.floor(10000 + Math.random() * 90000).toString();
-                const newTicketNo = `SH-2026-${randomNum}`;
-
-                const newAspirasi = {
-                    id: Date.now().toString(),
+                const newTicketNo = `SH-2026-${Date.now().toString().slice(-5)}${randomNum}`;
+                const payload = {
                     nomor_tiket: newTicketNo,
                     nama_pelapor: publicForm.nama.trim() || 'Anonim',
                     kategori_pelapor: publicForm.kategori_pelapor,
                     kategori_laporan: publicForm.kategori_laporan,
-                    judul: publicForm.judul,
-                    deskripsi: publicForm.deskripsi,
+                    judul: publicForm.judul.trim(),
+                    deskripsi: publicForm.deskripsi.trim(),
                     lampiran_url: null,
-                    email_kontak: publicForm.email,
+                    email_kontak: publicForm.email.trim() || null,
                     kode_akses_publik: accessCode,
                     petugas_pj: 'Belum Ditentukan',
                     prioritas: 'Sedang',
-                    status: 'Diterima',
-                    tanggal_target_selesai: '',
-                    tanggal_penyelesaian: '',
-                    ringkasan_hasil: '',
-                    tindakan_akhir: '',
-                    catatan_penyelesaian: '',
-                    alasan_penolakan: '',
-                    created_at: new Date().toISOString().replace('T', ' ').slice(0, 16),
-                    updated_at: new Date().toISOString().replace('T', ' ').slice(0, 16)
+                    status: 'Diterima'
                 };
-
-                const newHistory = {
-                    id: `R-${Date.now()}`,
-                    aspirasi_id: newAspirasi.id,
-                    tanggal: newAspirasi.created_at,
-                    petugas: 'Sistem Auto-Response',
-                    jenis_tindakan: 'Penerimaan Laporan',
-                    uraian: 'Laporan berhasil dibuat dan masuk ke database pengaduan SMPN 28 Malang.',
-                    hasil_sementara: 'Diterima',
-                    kendala: '-',
-                    rencana_berikutnya: 'Verifikasi oleh petugas',
-                    status_pada_saat_ini: 'Diterima',
-                    tampilkan_ke_publik: true
-                };
-
-                setAspirasiList([newAspirasi, ...aspirasiList]);
-                setRiwayatList([newHistory, ...riwayatList]);
+                const { data, error } = await supabaseClient
+                    .from('aspirasi_laporan').insert(payload).select().single();
+                if (error) {
+                    console.error('Gagal menyimpan aspirasi:', error.message);
+                    showToast('Aspirasi gagal disimpan. Periksa koneksi dan kebijakan Supabase.', 'error');
+                    return;
+                }
+                setAspirasiList((prev) => [data, ...prev]);
                 setSubmittedTicketResult({
-                    ticketNo: newTicketNo,
+                    ticketNo: data.nomor_tiket,
                     accessCode: accessCode,
                     email: publicForm.email
                 });
                 setPublicForm({ nama: '', kategori_pelapor: 'Siswa', kategori_laporan: 'Pengaduan', judul: '', deskripsi: '', email: '' });
-                showToast('Laporan berhasil dikirim! Nomor Tiket Anda telah diterbitkan.');
+                showToast('Laporan berhasil disimpan ke database. Nomor tiket diterbitkan.');
             };
 
             // Public Ticket Tracking State
