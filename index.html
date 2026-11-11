@@ -11,6 +11,8 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <!-- Babel for JSX Compilation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Supabase client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Custom Inter Font -->
@@ -41,6 +43,9 @@
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
+        const SUPABASE_URL = "https://jzoygbdsdyujvodelbdr.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_RhDBi4PPDb0A_bzAyl6Dxg_Mkj4FcKX";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // SVG Icon Component wrapper for Lucide icons in CDN environment
         const Icon = ({ name, className = "w-4 h-4" }) => {
@@ -264,7 +269,8 @@
             
             // Auth State
             const [isLoggedIn, setIsLoggedIn] = useState(false);
-            const [loginForm, setLoginForm] = useState({ username: 'budisantoso_admin', password: '••••••••', role: 'Administrator & Tim IT' });
+            const [authLoading, setAuthLoading] = useState(false);
+            const [loginForm, setLoginForm] = useState({ email: 'smpn28.mlg@gmail.com', password: '', role: 'Administrator & Tim IT' });
 
             // Notulen Archive Modal Detail State
             const [selectedNotulenDetail, setSelectedNotulenDetail] = useState(null);
@@ -274,7 +280,7 @@
             const recognitionRef = useRef(null);
 
             // App Data States
-            const [aspirasiList, setAspirasiList] = useState(INITIAL_ASPIRASI);
+            const [aspirasiList, setAspirasiList] = useState([]);
             const [riwayatList, setRiwayatList] = useState(INITIAL_RIWAYAT_TINDAK_LANJUT);
             const [dokumentasiList, setDokumentasiList] = useState(INITIAL_DOKUMENTASI);
             const [notulenList, setNotulenList] = useState(INITIAL_NOTULEN);
@@ -289,9 +295,9 @@
 
             // Staff User Profile State
             const [userProfile, setUserProfile] = useState({
-                name: 'Budi Santoso, S.Kom',
-                username: 'budisantoso_admin',
-                email: 'budi.santoso@smpn28malang.sch.id',
+                name: 'Administrator SchoolHub',
+                username: 'admin',
+                email: 'smpn28.mlg@gmail.com',
                 role: 'Administrator & Tim IT',
                 unit: 'Sub Bagian Tata Usaha & IT',
                 avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
@@ -350,21 +356,69 @@
                 }
             };
 
-            // Login Handle
-            const handleLoginSubmit = (e) => {
+            // Restore Supabase session and load reports for the authorized admin
+            useEffect(() => {
+                let mounted = true;
+                const restoreSession = async () => {
+                    const { data, error } = await supabaseClient.auth.getSession();
+                    if (error) console.error('Gagal memeriksa sesi:', error.message);
+                    if (!mounted) return;
+                    if (data?.session?.user) {
+                        setIsLoggedIn(true);
+                        setUserProfile((prev) => ({ ...prev, email: data.session.user.email || prev.email }));
+                        const { data: rows, error: rowsError } = await supabaseClient
+                            .from('aspirasi_laporan').select('*').order('created_at', { ascending: false });
+                        if (!rowsError && mounted) setAspirasiList(rows || []);
+                        else if (rowsError) console.error('Gagal memuat laporan:', rowsError.message);
+                    }
+                };
+                restoreSession();
+                const { data: authListener } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+                    if (!mounted) return;
+                    setIsLoggedIn(!!session?.user);
+                });
+                return () => {
+                    mounted = false;
+                    authListener?.subscription?.unsubscribe();
+                };
+            }, []);
+
+            // Login menggunakan email dan password Supabase
+            const handleLoginSubmit = async (e) => {
                 e.preventDefault();
-                if (!loginForm.username || !loginForm.password) {
-                    showToast('Mohon isi Username dan Password!', 'error');
+                if (!loginForm.email || !loginForm.password) {
+                    showToast('Mohon isi Email dan Password!', 'error');
                     return;
                 }
-                setIsLoggedIn(true);
+                setAuthLoading(true);
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: loginForm.email.trim(),
+                    password: loginForm.password
+                });
+                setAuthLoading(false);
+                if (error) {
+                    showToast('Login gagal. Periksa email dan kata sandi.', 'error');
+                    console.error('Supabase login error:', error.message);
+                    return;
+                }
+                const { data: rows, error: rowsError } = await supabaseClient
+                    .from('aspirasi_laporan').select('*').order('created_at', { ascending: false });
+                if (rowsError) {
+                    showToast('Login berhasil, tetapi laporan gagal dimuat. Periksa kebijakan database.', 'error');
+                    console.error('Supabase report load error:', rowsError.message);
+                } else {
+                    setAspirasiList(rows || []);
+                }
+                setUserProfile((prev) => ({ ...prev, email: data.user?.email || loginForm.email }));
                 setActivePortal('dashboard');
-                showToast(`Selamat datang kembali, ${userProfile.name}! (Akses Dashboard Aktif)`);
+                showToast('Login admin berhasil. Selamat datang di SchoolHub!');
             };
 
-            // Logout Handle
-            const handleLogout = () => {
+            // Logout dari Supabase
+            const handleLogout = async () => {
+                await supabaseClient.auth.signOut();
                 setIsLoggedIn(false);
+                setAspirasiList([]);
                 setActivePortal('public');
                 showToast('Anda telah keluar dari Dashboard Petugas.', 'info');
             };
@@ -1411,13 +1465,13 @@
 
                                 <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
                                     <div>
-                                        <label className="block font-semibold text-slate-300 mb-1">Username Petugas</label>
+                                        <label className="block font-semibold text-slate-300 mb-1">Email Admin</label>
                                         <input
-                                            type="text"
+                                            type="email"
                                             required
-                                            value={loginForm.username}
-                                            onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
-                                            placeholder="Masukkan username Anda"
+                                            value={loginForm.email}
+                                            onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                                            placeholder="Masukkan email admin"
                                             className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none"
                                         />
                                     </div>
