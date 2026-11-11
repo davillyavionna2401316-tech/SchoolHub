@@ -1,0 +1,2324 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCHOOLHUB — SMP NEGERI 28 MALANG</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & React DOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel for JSX Compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for better visual aesthetics */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // SVG Icon Component wrapper for Lucide icons in CDN environment
+        const Icon = ({ name, className = "w-4 h-4" }) => {
+            const iconRef = useRef(null);
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [name]);
+            return <i data-lucide={name} className={className}></i>;
+        };
+
+        // --- MOCK INITIAL DATA ---
+        const INITIAL_GUESTBOOK = [
+            { id: 'GB-101', date: '2026-11-10 09:30', name: 'Bambang Sudarmono', agency: 'Dinas Pendidikan Kota Malang', purpose: 'Moniotorik & Evaluasi Sarpras', email: 'bambang.diknas@malangkota.go.id', status: 'Terverifikasi', receiver: 'Pak Hartono' },
+            { id: 'GB-102', date: '2026-11-11 10:15', name: 'Siti Rahmawati', agency: 'Wali Murid Kelas VIII-A', purpose: 'Konsultasi Perkembangan Siswa', email: 'siti.rahma@gmail.com', status: 'Menunggu Verifikasi', receiver: 'Ibu Naning' },
+            { id: 'GB-103', date: '2026-11-11 13:45', name: 'Drs. Hendro Utomo', agency: 'SMPN 5 Malang', purpose: 'Studi Banding Pengelolaan Web SchoolHub', email: 'hendro.smpn5@malang.sch.id', status: 'Terverifikasi', receiver: 'Budi Santoso' },
+        ];
+
+        const INITIAL_ASPIRASI = [
+            {
+                id: '1',
+                nomor_tiket: 'SH-2026-0001',
+                nama_pelapor: 'Ahmad Fauzi',
+                kategori_pelapor: 'Siswa',
+                kategori_laporan: 'Pengaduan',
+                judul: 'Kerusakan Proyektor di Ruang Kelas IX-B',
+                deskripsi: 'Proyektor mati mendadak saat jam pelajaran IPS dan mengeluarkan suara berdesing keras.',
+                lampiran_url: null,
+                email_kontak: 'fauzi.siswa@gmail.com',
+                kode_akses_publik: '88219',
+                petugas_pj: 'Pak Hartono (Sarpras)',
+                prioritas: 'Tinggi',
+                status: 'Dalam Proses Tindak Lanjut',
+                tanggal_target_selesai: '2026-11-15',
+                tanggal_penyelesaian: '',
+                ringkasan_hasil: '',
+                tindakan_akhir: '',
+                catatan_penyelesaian: '',
+                alasan_penolakan: '',
+                created_at: '2026-11-08 10:20',
+                updated_at: '2026-11-10 14:30'
+            },
+            {
+                id: '2',
+                nomor_tiket: 'SH-2026-0002',
+                nama_pelapor: 'Anonim',
+                kategori_pelapor: 'Orang Tua',
+                kategori_laporan: 'Aspirasi dan Ide',
+                judul: 'Usulan Penambahan Kategori Ekstrakurikuler Robotik',
+                deskripsi: 'Mohon dipertimbangkan pembentukan ekstrakurikuler robotik/coding untuk menyalurkan minat bakat sains anak-anak.',
+                lampiran_url: null,
+                email_kontak: '',
+                kode_akses_publik: '45102',
+                petugas_pj: 'Ibu Naning (Kesiswaan)',
+                prioritas: 'Sedang',
+                status: 'Sedang Ditinjau',
+                tanggal_target_selesai: '2026-11-20',
+                tanggal_penyelesaian: '',
+                ringkasan_hasil: '',
+                tindakan_akhir: '',
+                catatan_penyelesaian: '',
+                alasan_penolakan: '',
+                created_at: '2026-11-09 11:00',
+                updated_at: '2026-11-09 11:00'
+            },
+            {
+                id: '3',
+                nomor_tiket: 'SH-2026-0003',
+                nama_pelapor: 'Dewi Lestari',
+                kategori_pelapor: 'Guru',
+                kategori_laporan: 'Kritik dan Saran',
+                judul: 'Perapian Kabel Jaringan di Laboratorium Komputer 2',
+                deskripsi: 'Kabel LAN melintas di lantai ruang lab 2 yang berisiko tersandung bagi para siswa.',
+                lampiran_url: null,
+                email_kontak: 'dewi.guru@smpn28malang.sch.id',
+                kode_akses_publik: '19384',
+                petugas_pj: 'Budi Santoso (Tim IT)',
+                prioritas: 'Mendesak',
+                status: 'Selesai',
+                tanggal_target_selesai: '2026-11-10',
+                tanggal_penyelesaian: '2026-11-10',
+                ringkasan_hasil: 'Kabel LAN telah dirapikan menggunakan ducting pelindung lantai standar keselamatan.',
+                tindakan_akhir: 'Pemasangan cable duct dan testing koneksi seluruh unit PC lab 2.',
+                catatan_penyelesaian: 'Pekerjaan selesai 100% dan terverifikasi aman.',
+                alasan_penolakan: '',
+                created_at: '2026-11-05 08:00',
+                updated_at: '2026-11-10 16:00'
+            }
+        ];
+
+        const INITIAL_RIWAYAT_TINDAK_LANJUT = [
+            {
+                id: 'R-01',
+                aspirasi_id: '1',
+                tanggal: '2026-11-08 10:20',
+                petugas: 'Sistem Auto-Response',
+                jenis_tindakan: 'Verifikasi Laporan',
+                uraian: 'Laporan berhasil diterima oleh sistem dan mendapatkan Nomor Tiket SH-2026-0001.',
+                hasil_sementara: 'Status Diterima',
+                kendala: '-',
+                rencana_berikutnya: 'Verifikasi tim admin',
+                status_pada_saat_ini: 'Diterima',
+                tampilkan_ke_publik: true
+            },
+            {
+                id: 'R-02',
+                aspirasi_id: '1',
+                tanggal: '2026-11-09 09:00',
+                petugas: 'Pak Hartono (Sarpras)',
+                jenis_tindakan: 'Pemeriksaan Lapangan',
+                uraian: 'Tim Sarpras mengecek langsung kondisi proyektor di ruang IX-B.',
+                hasil_sementara: 'Lampu proyektor mengalami overheat dan kabel power kendor.',
+                kendala: 'Stok cadangan lampu proyektor tipe X200 sedang kosong.',
+                rencana_berikutnya: 'Pengadaan sparepart baru.',
+                status_pada_saat_ini: 'Dalam Proses Tindak Lanjut',
+                tampilkan_ke_publik: true
+            },
+            {
+                id: 'R-03',
+                aspirasi_id: '3',
+                tanggal: '2026-11-05 08:00',
+                petugas: 'Admin Sistem',
+                jenis_tindakan: 'Pemeriksaan Laporan',
+                uraian: 'Laporan diverifikasi dan diteruskan ke Tim Teknisi IT.',
+                hasil_sementara: 'Terverifikasi',
+                kendala: '-',
+                rencana_berikutnya: 'Pemasangan ducting',
+                status_pada_saat_ini: 'Menunggu Verifikasi',
+                tampilkan_ke_publik: true
+            },
+            {
+                id: 'R-04',
+                aspirasi_id: '3',
+                tanggal: '2026-11-10 16:00',
+                petugas: 'Budi Santoso (Tim IT)',
+                jenis_tindakan: 'Perbaikan Fasilitas',
+                uraian: 'Pemasangan pelindung kabel ducting sepanjang 15 meter di area tengah lab.',
+                hasil_sementara: 'Selesai sempurna',
+                kendala: 'Tidak ada',
+                rencana_berikutnya: 'Finalisasi',
+                status_pada_saat_ini: 'Selesai',
+                tampilkan_ke_publik: true
+            }
+        ];
+
+        const INITIAL_DOKUMENTASI = [
+            {
+                id: 'DOK-001',
+                nama_kegiatan: 'Upacara Bendera Peringatan Hari Pahlawan 2026',
+                kategori: 'Kegiatan Sekolah',
+                tanggal_kegiatan: '2026-11-10',
+                lokasi: 'Lapangan Utama SMPN 28 Malang',
+                penanggung_jawab: 'Drs. Subakti (Kesiswaan)',
+                deskripsi: 'Khidmat pelaksanaan upacara peringatan Hari Pahlawan diikuti oleh seluruh siswa, guru, dan staf dengan pakaian adat daerah.',
+                foto_sampul_url: 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&q=80&w=600',
+                status_publikasi: 'Published',
+                files_count: 4,
+                created_at: '2026-11-10 11:00'
+            },
+            {
+                id: 'DOK-002',
+                nama_kegiatan: 'Olimpiade Sains Nasional (OSN) Tingkat Kota Malang',
+                kategori: 'Prestasi',
+                tanggal_kegiatan: '2026-11-03',
+                lokasi: 'Aula Diknas Kota Malang',
+                penanggung_jawab: 'Ibu Ratna Dewi, M.Pd',
+                deskripsi: 'Siswa SMPN 28 Malang meraih Juara 2 bidang Matematika dan Harapan 1 bidang IPA dalam ajang tahunan OSN Kota Malang.',
+                foto_sampul_url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600',
+                status_publikasi: 'Published',
+                files_count: 2,
+                created_at: '2026-11-04 09:30'
+            },
+            {
+                id: 'DOK-003',
+                nama_kegiatan: 'Bakti Sosial & Pengecekan Kesehatan Gratis Polehan',
+                kategori: 'Kegiatan Sosial',
+                tanggal_kegiatan: '2026-10-28',
+                lokasi: 'RT 06 RW 03 Kelurahan Polehan',
+                penanggung_jawab: 'PMR Madya & OSIS SMPN 28 Malang',
+                deskripsi: 'Wujud kepedulian warga sekolah terhadap lingkungan sekitar Jl. Sadewo dengan memberikan bantuan sembako dan cek tensi gratis.',
+                foto_sampul_url: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=600',
+                status_publikasi: 'Published',
+                files_count: 8,
+                created_at: '2026-10-29 14:00'
+            }
+        ];
+
+        const INITIAL_NOTULEN = [
+            {
+                id: 'NOT-2026-001',
+                judul_rapat: 'Rapat Koordinasi Persiapan Asesmen Akhir Semester (AAS) Ganjil',
+                jenis_rapat: 'Rapat Dinas',
+                tanggal_rapat: '2026-11-07',
+                waktu_mulai: '13:00',
+                waktu_selesai: '15:30',
+                lokasi: 'Ruang Rapat Utama SMPN 28 Malang',
+                pimpinan_rapat: 'Kepala Sekolah SMPN 28 Malang',
+                notulis_nama: 'Budi Santoso, S.Kom',
+                daftar_peserta: ['Seluruh Dewan Guru', 'Staf TU', 'Tim Kurikulum'],
+                agenda: '1. Pembentukan Panitia AAS\n2. Penyusunan Kisi-kisi Soal\n3. Pengaturan Jadwal Pelaksanaan',
+                hasil_pembahasan: 'Telah disepakati bahwa AAS Ganjil akan dimulai pada tanggal 1 Desember 2026 secara hybrid berbasis CBT.',
+                keputusan_rapat: 'Panitia diketuai oleh Ibu Naning, S.Pd. Penyerahan naskah soal paling lambat tanggal 22 November 2026.',
+                tindak_lanjut: 'Penyusunan draft jadwal oleh Tim Kurikulum.',
+                transkrip_audio: '[00:05] Kepsek: Rapat dibuka. Pembahasan mengenai AAS Ganjil.\n[00:15] Kurikulum: Pelaksanaan CBT siap per 1 Desember.\n[00:45] Ibu Naning: Siap memimpin panitia AAS.',
+                penanggung_jawab: 'Ibu Naning, S.Pd',
+                tenggat_waktu: '2026-11-22',
+                status_notulen: 'Final',
+                sync_status: 'Synced'
+            }
+        ];
+
+        function App() {
+            // Navigation & User State
+            const [activePortal, setActivePortal] = useState('public');
+            const [activePublicTab, setActivePublicTab] = useState('home');
+            const [activeDashboardMenu, setActiveDashboardMenu] = useState('dashboard');
+
+            // Public Documentation Detail Modal State
+            const [selectedPublicDokumentasi, setSelectedPublicDokumentasi] = useState(null);
+            
+            // Auth State
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [loginForm, setLoginForm] = useState({ username: 'budisantoso_admin', password: '••••••••', role: 'Administrator & Tim IT' });
+
+            // Notulen Archive Modal Detail State
+            const [selectedNotulenDetail, setSelectedNotulenDetail] = useState(null);
+
+            // Audio Speech Recognition State
+            const [isRecording, setIsRecording] = useState(false);
+            const recognitionRef = useRef(null);
+
+            // App Data States
+            const [aspirasiList, setAspirasiList] = useState(INITIAL_ASPIRASI);
+            const [riwayatList, setRiwayatList] = useState(INITIAL_RIWAYAT_TINDAK_LANJUT);
+            const [dokumentasiList, setDokumentasiList] = useState(INITIAL_DOKUMENTASI);
+            const [notulenList, setNotulenList] = useState(INITIAL_NOTULEN);
+            const [guestbookList, setGuestbookList] = useState(INITIAL_GUESTBOOK);
+
+            // Toast System
+            const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+            const showToast = (message, type = 'success') => {
+                setToast({ show: true, message, type });
+                setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 4000);
+            };
+
+            // Staff User Profile State
+            const [userProfile, setUserProfile] = useState({
+                name: 'Budi Santoso, S.Kom',
+                username: 'budisantoso_admin',
+                email: 'budi.santoso@smpn28malang.sch.id',
+                role: 'Administrator & Tim IT',
+                unit: 'Sub Bagian Tata Usaha & IT',
+                avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
+            });
+
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            });
+
+            // Toggle Live Speech Recording
+            const toggleRecording = () => {
+                if (isRecording) {
+                    if (recognitionRef.current) recognitionRef.current.stop();
+                    setIsRecording(false);
+                    showToast('Perekaman audio dihentikan.', 'info');
+                } else {
+                    setIsRecording(true);
+                    showToast('Perekaman suara aktif. Silakan berbicara...', 'success');
+                    
+                    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                        const recognition = new SpeechRecognition();
+                        recognition.continuous = true;
+                        recognition.interimResults = true;
+                        recognition.lang = 'id-ID';
+
+                        recognition.onresult = (event) => {
+                            let transcript = '';
+                            for (let i = event.resultIndex; i < event.results.length; i++) {
+                                transcript += event.results[i][0].transcript;
+                            }
+                            setNotulenForm((prev) => ({
+                                ...prev,
+                                hasil_pembahasan: prev.hasil_pembahasan + ' ' + transcript,
+                                transkrip_audio: (prev.transkrip_audio || '') + '\n' + transcript
+                            }));
+                        };
+
+                        recognition.onerror = () => setIsRecording(false);
+                        recognition.start();
+                        recognitionRef.current = recognition;
+                    } else {
+                        const sampleVoiceText = "\n[Transkrip Otomatis Voice]: Rapat menyetujui pengadaan perangkat pendukung lab komputer.";
+                        setTimeout(() => {
+                            setNotulenForm((prev) => ({
+                                ...prev,
+                                hasil_pembahasan: prev.hasil_pembahasan + sampleVoiceText,
+                                transkrip_audio: (prev.transkrip_audio || '') + sampleVoiceText
+                            }));
+                            setIsRecording(false);
+                            showToast('Simulasi Transkrip Audio Berhasil ditambahkan!', 'success');
+                        }, 3000);
+                    }
+                }
+            };
+
+            // Login Handle
+            const handleLoginSubmit = (e) => {
+                e.preventDefault();
+                if (!loginForm.username || !loginForm.password) {
+                    showToast('Mohon isi Username dan Password!', 'error');
+                    return;
+                }
+                setIsLoggedIn(true);
+                setActivePortal('dashboard');
+                showToast(`Selamat datang kembali, ${userProfile.name}! (Akses Dashboard Aktif)`);
+            };
+
+            // Logout Handle
+            const handleLogout = () => {
+                setIsLoggedIn(false);
+                setActivePortal('public');
+                showToast('Anda telah keluar dari Dashboard Petugas.', 'info');
+            };
+
+            // Modal Control States
+            const [selectedTicketDetail, setSelectedTicketDetail] = useState(null);
+            const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
+            const [isDokumentasiModalOpen, setIsDokumentasiModalOpen] = useState(false);
+            const [editingDokumentasi, setEditingDokumentasi] = useState(null);
+
+            // --- PUBLIC FORM STATES ---
+            const [gbForm, setGbForm] = useState({ name: '', agency: '', purpose: '' });
+            const handleGbSubmit = (e) => {
+                e.preventDefault();
+                if (!gbForm.name || !gbForm.purpose) {
+                    showToast('Mohon lengkapi Nama dan Maksud Kunjungan!', 'error');
+                    return;
+                }
+                const newEntry = {
+                    id: `GB-${Date.now().toString().slice(-3)}`,
+                    date: new Date().toISOString().replace('T', ' ').slice(0, 16),
+                    name: gbForm.name,
+                    agency: gbForm.agency || 'Umum / Pribadi',
+                    purpose: gbForm.purpose,
+                    phone: '-',
+                    status: 'Terverifikasi',
+                    receiver: 'Petugas Front Desk'
+                };
+                setGuestbookList([newEntry, ...guestbookList]);
+                setGbForm({ name: '', agency: '', purpose: '' });
+                showToast('Terima kasih! Bukti kunjungan digital berhasil dicatat.');
+            };
+
+            // Public Complaint Form
+            const [publicForm, setPublicForm] = useState({
+                nama: '',
+                kategori_pelapor: 'Siswa',
+                kategori_laporan: 'Pengaduan',
+                judul: '',
+                deskripsi: '',
+                email: ''
+            });
+            const [submittedTicketResult, setSubmittedTicketResult] = useState(null);
+
+            const handlePublicSubmit = (e) => {
+                e.preventDefault();
+                if (!publicForm.judul || !publicForm.deskripsi) {
+                    showToast('Mohon isi Judul dan Isi Laporan!', 'error');
+                    return;
+                }
+
+                const randomNum = Math.floor(1000 + Math.random() * 9000);
+                const accessCode = Math.floor(10000 + Math.random() * 90000).toString();
+                const newTicketNo = `SH-2026-${randomNum}`;
+
+                const newAspirasi = {
+                    id: Date.now().toString(),
+                    nomor_tiket: newTicketNo,
+                    nama_pelapor: publicForm.nama.trim() || 'Anonim',
+                    kategori_pelapor: publicForm.kategori_pelapor,
+                    kategori_laporan: publicForm.kategori_laporan,
+                    judul: publicForm.judul,
+                    deskripsi: publicForm.deskripsi,
+                    lampiran_url: null,
+                    email_kontak: publicForm.email,
+                    kode_akses_publik: accessCode,
+                    petugas_pj: 'Belum Ditentukan',
+                    prioritas: 'Sedang',
+                    status: 'Diterima',
+                    tanggal_target_selesai: '',
+                    tanggal_penyelesaian: '',
+                    ringkasan_hasil: '',
+                    tindakan_akhir: '',
+                    catatan_penyelesaian: '',
+                    alasan_penolakan: '',
+                    created_at: new Date().toISOString().replace('T', ' ').slice(0, 16),
+                    updated_at: new Date().toISOString().replace('T', ' ').slice(0, 16)
+                };
+
+                const newHistory = {
+                    id: `R-${Date.now()}`,
+                    aspirasi_id: newAspirasi.id,
+                    tanggal: newAspirasi.created_at,
+                    petugas: 'Sistem Auto-Response',
+                    jenis_tindakan: 'Penerimaan Laporan',
+                    uraian: 'Laporan berhasil dibuat dan masuk ke database pengaduan SMPN 28 Malang.',
+                    hasil_sementara: 'Diterima',
+                    kendala: '-',
+                    rencana_berikutnya: 'Verifikasi oleh petugas',
+                    status_pada_saat_ini: 'Diterima',
+                    tampilkan_ke_publik: true
+                };
+
+                setAspirasiList([newAspirasi, ...aspirasiList]);
+                setRiwayatList([newHistory, ...riwayatList]);
+                setSubmittedTicketResult({
+                    ticketNo: newTicketNo,
+                    accessCode: accessCode,
+                    email: publicForm.email
+                });
+                setPublicForm({ nama: '', kategori_pelapor: 'Siswa', kategori_laporan: 'Pengaduan', judul: '', deskripsi: '', email: '' });
+                showToast('Laporan berhasil dikirim! Nomor Tiket Anda telah diterbitkan.');
+            };
+
+            // Public Ticket Tracking State
+            const [trackInput, setTrackInput] = useState({ ticketNo: '', accessCode: '' });
+            const [trackedResult, setTrackedResult] = useState(null);
+            const [trackError, setTrackError] = useState('');
+
+            const handleTrackSubmit = (e) => {
+                e.preventDefault();
+                setTrackError('');
+                setTrackedResult(null);
+
+                const found = aspirasiList.find(
+                    (a) => a.nomor_tiket.toLowerCase() === trackInput.ticketNo.trim().toLowerCase()
+                );
+
+                if (!found) {
+                    setTrackError('Nomor Tiket tidak ditemukan dalam database.');
+                    return;
+                }
+
+                if (found.kode_akses_publik && found.kode_akses_publik !== trackInput.accessCode.trim()) {
+                    setTrackError('Kode Akses Publik / Verifikasi tidak cocok!');
+                    return;
+                }
+
+                const histories = riwayatList.filter((r) => r.aspirasi_id === found.id && r.tampilkan_ke_publik);
+                setTrackedResult({ item: found, histories });
+            };
+
+            // --- DASHBOARD ACTION FORM STATES ---
+            const [followUpForm, setFollowUpForm] = useState({
+                petugas_pj: '',
+                prioritas: 'Sedang',
+                target_selesai: '',
+                jenis_tindakan: 'Pemeriksaan laporan',
+                uraian_tindakan: '',
+                hasil_sementara: '',
+                kendala: '',
+                rencana_berikutnya: '',
+                new_status: 'Dalam Proses Tindak Lanjut',
+                tampilkan_ke_publik: true,
+                ringkasan_hasil: '',
+                tindakan_akhir: '',
+                catatan_penyelesaian: '',
+                alasan_penolakan: ''
+            });
+
+            const openFollowUpModal = (item) => {
+                setSelectedTicketDetail(item);
+                setFollowUpForm({
+                    petugas_pj: item.petugas_pj || userProfile.name,
+                    prioritas: item.prioritas || 'Sedang',
+                    target_selesai: item.tanggal_target_selesai || '',
+                    jenis_tindakan: 'Pemeriksaan laporan',
+                    uraian_tindakan: '',
+                    hasil_sementara: '',
+                    kendala: '',
+                    rencana_berikutnya: '',
+                    new_status: item.status || 'Dalam Proses Tindak Lanjut',
+                    tampilkan_ke_publik: true,
+                    ringkasan_hasil: item.ringkasan_hasil || '',
+                    tindakan_akhir: item.tindakan_akhir || '',
+                    catatan_penyelesaian: item.catatan_penyelesaian || '',
+                    alasan_penolakan: item.alasan_penolakan || ''
+                });
+                setIsFollowUpModalOpen(true);
+            };
+
+            const handleSaveFollowUp = (e) => {
+                e.preventDefault();
+                if (!selectedTicketDetail) return;
+
+                if (followUpForm.new_status === 'Selesai') {
+                    if (!followUpForm.ringkasan_hasil || !followUpForm.tindakan_akhir || !followUpForm.catatan_penyelesaian) {
+                        showToast('Untuk status SELESAI, wajib mengisi Ringkasan Hasil, Tindakan Akhir, dan Catatan Penyelesaian!', 'error');
+                        return;
+                    }
+                }
+
+                if (followUpForm.new_status === 'Tidak Dapat Ditindaklanjuti') {
+                    if (!followUpForm.alasan_penolakan) {
+                        showToast('Untuk status TIDAK DAPAT DITINDAKLANJUTI, wajib mengisi Alasan Penolakan!', 'error');
+                        return;
+                    }
+                }
+
+                const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
+
+                const updatedAspirasi = aspirasiList.map((item) => {
+                    if (item.id === selectedTicketDetail.id) {
+                        return {
+                            ...item,
+                            petugas_pj: followUpForm.petugas_pj,
+                            prioritas: followUpForm.prioritas,
+                            status: followUpForm.new_status,
+                            tanggal_target_selesai: followUpForm.target_selesai,
+                            tanggal_penyelesaian: followUpForm.new_status === 'Selesai' ? nowStr.slice(0, 10) : item.tanggal_penyelesaian,
+                            ringkasan_hasil: followUpForm.ringkasan_hasil,
+                            tindakan_akhir: followUpForm.tindakan_akhir,
+                            catatan_penyelesaian: followUpForm.catatan_penyelesaian,
+                            alasan_penolakan: followUpForm.alasan_penolakan,
+                            updated_at: nowStr
+                        };
+                    }
+                    return item;
+                });
+
+                const newHistoryItem = {
+                    id: `R-${Date.now()}`,
+                    aspirasi_id: selectedTicketDetail.id,
+                    tanggal: nowStr,
+                    petugas: userProfile.name,
+                    jenis_tindakan: followUpForm.jenis_tindakan,
+                    uraian: followUpForm.uraian_tindakan || `Pembaruan status menjadi ${followUpForm.new_status}`,
+                    hasil_sementara: followUpForm.hasil_sementara || '-',
+                    kendala: followUpForm.kendala || '-',
+                    rencana_berikutnya: followUpForm.rencana_berikutnya || '-',
+                    status_pada_saat_ini: followUpForm.new_status,
+                    tampilkan_ke_publik: followUpForm.tampilkan_ke_publik
+                };
+
+                setAspirasiList(updatedAspirasi);
+                setRiwayatList([newHistoryItem, ...riwayatList]);
+                setIsFollowUpModalOpen(false);
+                showToast('Tindak lanjut & pembaruan status berhasil disimpan ke database!');
+            };
+
+            // --- DOKUMENTASI UPLOAD & EDIT FORM STATES ---
+            const [dokForm, setDokForm] = useState({
+                nama_kegiatan: '',
+                kategori: 'Kegiatan Sekolah',
+                tanggal_kegiatan: new Date().toISOString().slice(0, 10),
+                lokasi: '',
+                penanggung_jawab: '',
+                deskripsi: '',
+                foto_sampul_url: ''
+            });
+            const [uploadedFilesDemo, setUploadedFilesDemo] = useState([]);
+
+            const handleFileUploadDemo = (e) => {
+                const files = Array.from(e.target.files);
+                if (!files.length) return;
+
+                const formatted = files.map((f) => ({
+                    name: f.name,
+                    size: (f.size / (1024 * 1024)).toFixed(2) + ' MB',
+                    type: f.type.split('/')[1]?.toUpperCase() || 'FILE',
+                    preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null
+                }));
+
+                setUploadedFilesDemo([...uploadedFilesDemo, ...formatted]);
+                if (formatted[0]?.preview && !dokForm.foto_sampul_url) {
+                    setDokForm({ ...dokForm, foto_sampul_url: formatted[0].preview });
+                }
+            };
+
+            const removeUploadedFile = (idx) => {
+                const updated = uploadedFilesDemo.filter((_, i) => i !== idx);
+                setUploadedFilesDemo(updated);
+            };
+
+            const handleDeleteDokumentasi = (id) => {
+                if (confirm('Apakah Anda yakin ingin menghapus dokumentasi ini?')) {
+                    setDokumentasiList(dokumentasiList.filter(d => d.id !== id));
+                    showToast('Dokumentasi telah dihapus.');
+                }
+            };
+
+            const handleSaveDokumentasi = (e) => {
+                e.preventDefault();
+                if (!dokForm.nama_kegiatan || !dokForm.lokasi) {
+                    showToast('Lengkapi Nama Kegiatan dan Lokasi!', 'error');
+                    return;
+                }
+
+                if (editingDokumentasi) {
+                    const updated = dokumentasiList.map((d) =>
+                        d.id === editingDokumentasi.id
+                            ? {
+                                  ...d,
+                                  ...dokForm,
+                                  foto_sampul_url: dokForm.foto_sampul_url || d.foto_sampul_url,
+                                  files_count: (d.files_count || 1) + uploadedFilesDemo.length
+                              }
+                            : d
+                    );
+                    setDokumentasiList(updated);
+                    showToast('Dokumentasi kegiatan berhasil diperbarui!');
+                } else {
+                    const newDok = {
+                        id: `DOK-${Date.now().toString().slice(-3)}`,
+                        ...dokForm,
+                        foto_sampul_url:
+                            dokForm.foto_sampul_url ||
+                            'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=600',
+                        status_publikasi: 'Published',
+                        files_count: uploadedFilesDemo.length || 1,
+                        created_at: new Date().toISOString().replace('T', ' ').slice(0, 16)
+                    };
+                    setDokumentasiList([newDok, ...dokumentasiList]);
+                    showToast('Dokumentasi baru berhasil diunggah dan dipublikasikan!');
+                }
+
+                setIsDokumentasiModalOpen(false);
+                setEditingDokumentasi(null);
+                setUploadedFilesDemo([]);
+            };
+
+            // --- NOTULEN AUTOSAVE ENGINE ---
+            const [notulenForm, setNotulenForm] = useState({
+                judul_rapat: '',
+                jenis_rapat: 'Rapat Dinas',
+                tanggal_rapat: new Date().toISOString().slice(0, 10),
+                waktu_mulai: '09:00',
+                waktu_selesai: '11:30',
+                lokasi: 'Ruang Rapat Utama SMPN 28 Malang',
+                pimpinan_rapat: 'Kepala Sekolah SMPN 28 Malang',
+                notulis_nama: userProfile.name,
+                daftar_peserta: 'Seluruh Guru & Karyawan',
+                agenda: '',
+                hasil_pembahasan: '',
+                keputusan_rapat: '',
+                tindak_lanjut: '',
+                penanggung_jawab: '',
+                tenggat_waktu: ''
+            });
+            const [autosaveStatus, setAutosaveStatus] = useState('Draf belum disimpan');
+
+            useEffect(() => {
+                if (!notulenForm.judul_rapat && !notulenForm.hasil_pembahasan) return;
+                setAutosaveStatus('Menyimpan draf...');
+                const timer = setTimeout(() => {
+                    const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    setAutosaveStatus(`Draf tersimpan otomatis pada (${timeStr})`);
+                }, 2000);
+                return () => clearTimeout(timer);
+            }, [notulenForm]);
+
+            const handleSaveNotulen = (e) => {
+                e.preventDefault();
+                if (!notulenForm.judul_rapat || !notulenForm.hasil_pembahasan) {
+                    showToast('Mohon isi Judul Rapat dan Hasil Pembahasan!', 'error');
+                    return;
+                }
+
+                const newNotulen = {
+                    id: `NOT-2026-${Math.floor(100 + Math.random() * 900)}`,
+                    ...notulenForm,
+                    daftar_peserta: Array.isArray(notulenForm.daftar_peserta)
+                        ? notulenForm.daftar_peserta
+                        : notulenForm.daftar_peserta.split(',').map((s) => s.trim()),
+                    status_notulen: 'Final',
+                    sync_status: 'Synced'
+                };
+
+                setNotulenList([newNotulen, ...notulenList]);
+                setAutosaveStatus('Tersimpan di Database & Google Sheets');
+                showToast('Notulen berhasil disimpan dan sinkron ke Google Sheets!');
+            };
+
+            // --- PROFILE MANAGEMENT STATE ---
+            const [profileForm, setProfileForm] = useState({ ...userProfile, oldPass: '', newPass: '', confirmPass: '' });
+            const handleProfileSubmit = (e) => {
+                e.preventDefault();
+                if (profileForm.newPass && profileForm.newPass !== profileForm.confirmPass) {
+                    showToast('Konfirmasi kata sandi baru tidak cocok!', 'error');
+                    return;
+                }
+                setUserProfile({
+                    ...userProfile,
+                    name: profileForm.name,
+                    username: profileForm.username,
+                    email: profileForm.email,
+                    role: profileForm.role,
+                    unit: profileForm.unit,
+                    avatar: profileForm.avatar
+                });
+                showToast('Profil pengguna berhasil diperbarui!');
+            };
+
+            const handleVerifyGuest = (id) => {
+                setGuestbookList(guestbookList.map(g => g.id === id ? { ...g, status: 'Terverifikasi' } : g));
+                showToast('Tamu berhasil diverifikasi.');
+            };
+
+            const renderStatusBadge = (status) => {
+                let colorClass = "bg-slate-100 text-slate-800";
+                if (status === 'Selesai') colorClass = "bg-emerald-100 text-emerald-800";
+                if (status === 'Dalam Proses Tindak Lanjut') colorClass = "bg-blue-100 text-blue-800";
+                if (status === 'Sedang Ditinjau') colorClass = "bg-amber-100 text-amber-800";
+                if (status === 'Tidak Dapat Ditindaklanjuti') colorClass = "bg-rose-100 text-rose-800";
+
+                return (
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${colorClass}`}>
+                        {status}
+                    </span>
+                );
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
+                    {/* GLOBAL TOAST NOTIFICATION */}
+                    {toast.show && (
+                        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm font-medium border transition-all duration-300 ${
+                            toast.type === 'error' ? 'bg-rose-900 text-white border-rose-700' : 'bg-slate-900 text-white border-slate-700'
+                        }`}>
+                            <Icon name={toast.type === 'error' ? "alert-triangle" : "check-circle-2"} className="w-5 h-5 text-cyan-400" />
+                            <span>{toast.message}</span>
+                        </div>
+                    )}
+
+                    {/* GLOBAL HEADER BAR */}
+                    <header className="bg-slate-900 text-white sticky top-0 z-40 shadow-md border-b border-slate-800">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                            <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setActivePortal('public'); setActivePublicTab('home'); }}>
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-lg">
+                                    <Icon name="building-2" className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-black text-lg tracking-wider text-cyan-400">SCHOOLHUB</span>
+                                        <span className="text-[10px] bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-cyan-300 font-mono">v2.0</span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-400 tracking-wide font-medium">SMP NEGERI 28 MALANG</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="bg-slate-800 p-1 rounded-xl border border-slate-700 flex items-center gap-1">
+                                    <button
+                                        onClick={() => setActivePortal('public')}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                            activePortal === 'public'
+                                                ? 'bg-cyan-500 text-slate-950 font-bold shadow'
+                                                : 'text-slate-400 hover:text-white'
+                                        }`}
+                                    >
+                                        Halaman Publik
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (isLoggedIn) {
+                                                setActivePortal('dashboard');
+                                            } else {
+                                                setActivePortal('login');
+                                            }
+                                        }}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+                                            activePortal === 'dashboard' || activePortal === 'login'
+                                                ? 'bg-blue-600 text-white shadow font-bold'
+                                                : 'text-slate-400 hover:text-white'
+                                        }`}
+                                    >
+                                        <Icon name="shield-check" className="w-3.5 h-3.5" /> {isLoggedIn ? 'Dashboard Petugas' : 'Login Petugas'}
+                                    </button>
+                                </div>
+
+                                {isLoggedIn ? (
+                                    <button
+                                        onClick={handleLogout}
+                                        className="hidden sm:flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-rose-400 text-xs px-3 py-2 rounded-xl font-medium border border-slate-700 transition-all"
+                                    >
+                                        <Icon name="log-out" className="w-3.5 h-3.5" /> Keluar
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => setActivePortal('login')}
+                                        className="hidden sm:flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded-xl font-medium transition-all shadow-sm"
+                                    >
+                                        <Icon name="lock" className="w-3.5 h-3.5" /> Portal Login
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* PUBLIC PORTAL VIEW */}
+                    {activePortal === 'public' && (
+                        <div className="flex-1 flex flex-col">
+                            {/* NAV TABS PUBLIC */}
+                            <nav className="bg-white border-b border-slate-200 sticky top-16 z-30">
+                                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 overflow-x-auto py-2">
+                                    {[
+                                        { id: 'home', label: 'Beranda', icon: 'building-2' },
+                                        { id: 'buku-tamu', label: 'Buku Tamu Digital', icon: 'user-check' },
+                                        { id: 'dokumentasi', label: 'Galeri Kegiatan', icon: 'image' },
+                                        { id: 'pengaduan', label: 'Kirim Aspirasi', icon: 'message-square' },
+                                        { id: 'lacak', label: 'Lacak Status Tiket', icon: 'search' },
+                                        { id: 'kontak', label: 'Kontak & Lokasi Peta', icon: 'map-pin' }
+                                    ].map((tab) => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActivePublicTab(tab.id)}
+                                            className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
+                                                activePublicTab === tab.id
+                                                    ? 'bg-slate-900 text-cyan-400 shadow-sm'
+                                                    : 'text-slate-600 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            <Icon name={tab.icon} className="w-4 h-4" />
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </nav>
+
+                            {/* TAB 1: PUBLIC HOME */}
+                            {activePublicTab === 'home' && (
+                                <div className="flex-1">
+                                    <div className="relative bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+                                        <div className="max-w-5xl mx-auto text-center relative z-10">
+                                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950 text-cyan-300 text-xs font-semibold border border-cyan-800 mb-6">
+                                                <Icon name="sparkles" className="w-3.5 h-3.5 text-cyan-400" /> Portal Layanan Terpadu & Transparan
+                                            </span>
+                                            <h1 className="text-4xl sm:text-6xl font-black tracking-tight mb-4 text-white">
+                                                SCHOOLHUB <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">SMP NEGERI 28 MALANG</span>
+                                            </h1>
+                                            <p className="text-xl sm:text-2xl font-light text-slate-300 mb-8 tracking-widest font-mono">
+                                                CONNECT. COMMUNICATE. CARE.
+                                            </p>
+                                            <p className="max-w-2xl mx-auto text-slate-300 text-sm sm:text-base leading-relaxed mb-8">
+                                                Selamat datang di platform digital resmi SMP Negeri 28 Malang. Layanan terintegrasi untuk pengisian Buku Tamu, Galeri Kegiatan, Pengaduan Masyarakat, dan Transparansi Administrasi Sekolah.
+                                            </p>
+                                            <div className="flex flex-wrap justify-center gap-4">
+                                                <button
+                                                    onClick={() => setActivePublicTab('pengaduan')}
+                                                    className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold text-sm shadow-lg hover:shadow-cyan-500/20 transition-all flex items-center gap-2"
+                                                >
+                                                    <Icon name="message-square" className="w-4 h-4" /> Kirim Aspirasi / Pengaduan
+                                                </button>
+                                                <button
+                                                    onClick={() => setActivePublicTab('buku-tamu')}
+                                                    className="px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm border border-slate-700 transition-all flex items-center gap-2"
+                                                >
+                                                    <Icon name="user-check" className="w-4 h-4" /> Isi Buku Tamu Digital
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20 mb-16">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-100">
+                                                <div className="w-12 h-12 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center mb-4">
+                                                    <Icon name="user-check" className="w-6 h-6" />
+                                                </div>
+                                                <h3 className="font-bold text-lg text-slate-900 mb-2">Buku Tamu Digital</h3>
+                                                <p className="text-slate-600 text-sm mb-4">Pencatatan daftar hadir instansi, orang tua murid, dan tamu umum secara otomatis tanpa perlu login.</p>
+                                                <button onClick={() => setActivePublicTab('buku-tamu')} className="text-cyan-600 font-semibold text-xs flex items-center gap-1 hover:underline">
+                                                    Akses Buku Tamu <Icon name="chevron-right" className="w-4 h-4"/>
+                                                </button>
+                                            </div>
+
+                                            <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-100">
+                                                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+                                                    <Icon name="image" className="w-6 h-6" />
+                                                </div>
+                                                <h3 className="font-bold text-lg text-slate-900 mb-2">Dokumentasi Kegiatan</h3>
+                                                <p className="text-slate-600 text-sm mb-4">Arsip foto dan dokumen pendukung agenda akademik, kesiswaan, dan prestasi SMPN 28 Malang.</p>
+                                                <button onClick={() => setActivePublicTab('dokumentasi')} className="text-blue-600 font-semibold text-xs flex items-center gap-1 hover:underline">
+                                                    Lihat Galeri <Icon name="chevron-right" className="w-4 h-4"/>
+                                                </button>
+                                            </div>
+
+                                            <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-100">
+                                                <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4">
+                                                    <Icon name="shield-check" className="w-6 h-6" />
+                                                </div>
+                                                <h3 className="font-bold text-lg text-slate-900 mb-2">Aspirasi & Pengaduan</h3>
+                                                <p className="text-slate-600 text-sm mb-4">Layanan penyampaian masukan & pengaduan dengan sistem tiket verifikasi terlindung & terlacak realtime.</p>
+                                                <button onClick={() => setActivePublicTab('pengaduan')} className="text-indigo-600 font-semibold text-xs flex items-center gap-1 hover:underline">
+                                                    Kirim Laporan <Icon name="chevron-right" className="w-4 h-4"/>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 2: BUKU TAMU DIGITAL */}
+                            {activePublicTab === 'buku-tamu' && (
+                                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
+                                    <div className="mb-8">
+                                        <h2 className="text-2xl font-bold text-slate-900">Buku Tamu Digital (Guestbook)</h2>
+                                        <p className="text-slate-600 text-sm">Silakan isi formulir kehadiran pengunjung SMP Negeri 28 Malang di bawah ini.</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                            <h3 className="font-bold text-base text-slate-900 mb-4 flex items-center gap-2">
+                                                <Icon name="user-check" className="w-5 h-5 text-cyan-600" /> Formulir Kehadiran Tamu
+                                            </h3>
+                                            <form onSubmit={handleGbSubmit} className="space-y-4">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap *</label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={gbForm.name}
+                                                        onChange={(e) => setGbForm({ ...gbForm, name: e.target.value })}
+                                                        placeholder="Contoh: Drs. Ahmad Dahlan"
+                                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-700 mb-1">Instansi / Asal / Jabatan</label>
+                                                    <input
+                                                        type="text"
+                                                        value={gbForm.agency}
+                                                        onChange={(e) => setGbForm({ ...gbForm, agency: e.target.value })}
+                                                        placeholder="Contoh: Orang Tua Murid VIII-B / Dinas"
+                                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-700 mb-1">Maksud & Tujuan Kunjungan *</label>
+                                                    <textarea
+                                                        required
+                                                        rows={3}
+                                                        value={gbForm.purpose}
+                                                        onChange={(e) => setGbForm({ ...gbForm, purpose: e.target.value })}
+                                                        placeholder="Deskripsikan secara singkat tujuan kunjungan Anda..."
+                                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                    ></textarea>
+                                                </div>
+
+                                                <button
+                                                    type="submit"
+                                                    className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                                                >
+                                                    <Icon name="send" className="w-4 h-4" /> Simpan Kehadiran
+                                                </button>
+                                            </form>
+                                        </div>
+
+                                        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                            <h3 className="font-bold text-base text-slate-900 mb-4 flex items-center justify-between">
+                                                <span>Daftar Kunjungan Terbaru</span>
+                                                <span className="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-slate-600 font-medium">Total: {guestbookList.length} Tamu</span>
+                                            </h3>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left text-xs text-slate-600">
+                                                    <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                                                        <tr>
+                                                            <th className="py-3 px-3">Waktu</th>
+                                                            <th className="py-3 px-3">Nama Tamu</th>
+                                                            <th className="py-3 px-3">Instansi / Asal</th>
+                                                            <th className="py-3 px-3">Maksud / Tujuan</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {guestbookList.map((g) => (
+                                                            <tr key={g.id} className="hover:bg-slate-50/80 transition-colors">
+                                                                <td className="py-3 px-3 font-mono text-slate-500 whitespace-nowrap">{g.date}</td>
+                                                                <td className="py-3 px-3 font-semibold text-slate-900">{g.name}</td>
+                                                                <td className="py-3 px-3 text-slate-700">{g.agency}</td>
+                                                                <td className="py-3 px-3 text-slate-600">{g.purpose}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 3: DOKUMENTASI KEGIATAN PUBLIK */}
+                            {activePublicTab === 'dokumentasi' && (
+                                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
+                                    <div className="mb-8">
+                                        <h2 className="text-2xl font-bold text-slate-900">Galeri & Dokumentasi Kegiatan</h2>
+                                        <p className="text-slate-600 text-sm">Dokumentasi resmi seluruh agenda, prestasi, dan kegiatan SMP Negeri 28 Malang. Klik foto untuk melihat rincian.</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {dokumentasiList.map((dok) => (
+                                            <div
+                                                key={dok.id}
+                                                onClick={() => setSelectedPublicDokumentasi(dok)}
+                                                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col cursor-pointer group"
+                                            >
+                                                <div className="h-48 overflow-hidden relative bg-slate-100">
+                                                    <img src={dok.foto_sampul_url} alt={dok.nama_kegiatan} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                                    <span className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-sm text-cyan-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                                                        {dok.kategori}
+                                                    </span>
+                                                </div>
+                                                <div className="p-5 flex-1 flex flex-col justify-between">
+                                                    <div>
+                                                        <div className="flex items-center gap-3 text-xs text-slate-500 mb-2">
+                                                            <span className="flex items-center gap-1"><Icon name="calendar" className="w-3.5 h-3.5"/> {dok.tanggal_kegiatan}</span>
+                                                            <span className="flex items-center gap-1"><Icon name="map-pin" className="w-3.5 h-3.5"/> {dok.lokasi}</span>
+                                                        </div>
+                                                        <h3 className="font-bold text-base text-slate-900 mb-2 line-clamp-2 group-hover:text-cyan-700 transition-colors">{dok.nama_kegiatan}</h3>
+                                                        <p className="text-slate-600 text-xs line-clamp-3 mb-4">{dok.deskripsi}</p>
+                                                    </div>
+                                                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                                                        <span>PJ: {dok.penanggung_jawab}</span>
+                                                        <span className="font-medium text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded flex items-center gap-1">
+                                                            <Icon name="image" className="w-3 h-3" /> {dok.files_count || 1} Berkas
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 4: FORM ASPIRASI & PENGADUAN PUBLIK */}
+                            {activePublicTab === 'pengaduan' && (
+                                <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full">
+                                    <div className="bg-white p-8 rounded-3xl shadow-md border border-slate-200">
+                                        <div className="mb-6">
+                                            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                                                <Icon name="message-square" className="w-6 h-6 text-cyan-600" /> Layanan Aspirasi & Pengaduan
+                                            </h2>
+                                            <p className="text-slate-600 text-sm">Sampaikan masukan, aduan, atau ide untuk kemajuan SMP Negeri 28 Malang. Anda akan menerima Nomor Tiket untuk melacak tindak lanjut.</p>
+                                        </div>
+
+                                        {submittedTicketResult ? (
+                                            <div className="p-6 bg-cyan-50 border border-cyan-200 rounded-2xl text-center space-y-4">
+                                                <div className="w-12 h-12 bg-cyan-500 text-white rounded-full flex items-center justify-center mx-auto">
+                                                    <Icon name="check-circle-2" className="w-7 h-7" />
+                                                </div>
+                                                <h3 className="text-xl font-bold text-slate-900">Laporan Berhasil Dikirim!</h3>
+                                                <p className="text-xs text-slate-600 max-w-md mx-auto">
+                                                    Terima kasih atas masukan Anda. Aspirasi atau pengaduan telah berhasil dikirim dan akan ditinjau oleh pihak SMP Negeri 28 Malang.
+                                                </p>
+                                                <div className="p-4 bg-white rounded-xl border border-cyan-200 max-w-sm mx-auto space-y-2">
+                                                    <div className="text-xs text-slate-500">Nomor Tiket Anda:</div>
+                                                    <div className="text-2xl font-black font-mono text-cyan-600">{submittedTicketResult.ticketNo}</div>
+                                                    <div className="text-xs text-slate-500 pt-1">Kode Akses Lacak: <span className="font-bold text-slate-900 font-mono">{submittedTicketResult.accessCode}</span></div>
+                                                </div>
+                                                <div className="flex justify-center gap-3 pt-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setTrackInput({ ticketNo: submittedTicketResult.ticketNo, accessCode: submittedTicketResult.accessCode });
+                                                            setActivePublicTab('lacak');
+                                                        }}
+                                                        className="px-5 py-2.5 bg-slate-900 text-cyan-400 font-bold text-xs rounded-xl"
+                                                    >
+                                                        Lacak Status Laporan Ini
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setSubmittedTicketResult(null)}
+                                                        className="px-5 py-2.5 bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                                                    >
+                                                        Kirim Laporan Lain
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <form onSubmit={handlePublicSubmit} className="space-y-4 text-xs">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block font-semibold text-slate-700 mb-1">Nama Pelapor (Opsional)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={publicForm.nama}
+                                                            onChange={(e) => setPublicForm({ ...publicForm, nama: e.target.value })}
+                                                            placeholder="Kosongkan jika ingin Anonim"
+                                                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block font-semibold text-slate-700 mb-1">Email / Kontak (Opsional)</label>
+                                                        <input
+                                                            type="email"
+                                                            value={publicForm.email}
+                                                            onChange={(e) => setPublicForm({ ...publicForm, email: e.target.value })}
+                                                            placeholder="Untuk menerima notifikasi balasan"
+                                                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block font-semibold text-slate-700 mb-1">Kategori Pelapor *</label>
+                                                        <select
+                                                            value={publicForm.kategori_pelapor}
+                                                            onChange={(e) => setPublicForm({ ...publicForm, kategori_pelapor: e.target.value })}
+                                                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                        >
+                                                            <option value="Siswa">Siswa</option>
+                                                            <option value="Orang Tua">Orang Tua / Wali Murid</option>
+                                                            <option value="Guru">Guru / Tenaga Pendidik</option>
+                                                            <option value="Masyarakat">Masyarakat Umum</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block font-semibold text-slate-700 mb-1">Kategori Laporan *</label>
+                                                        <select
+                                                            value={publicForm.kategori_laporan}
+                                                            onChange={(e) => setPublicForm({ ...publicForm, kategori_laporan: e.target.value })}
+                                                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                        >
+                                                            <option value="Pengaduan">1. Pengaduan Kerusakan / Masalah</option>
+                                                            <option value="Kritik dan Saran">2. Kritik dan Saran</option>
+                                                            <option value="Aspirasi dan Ide">3. Aspirasi dan Ide Kreatif</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block font-semibold text-slate-700 mb-1">Judul Laporan *</label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={publicForm.judul}
+                                                        onChange={(e) => setPublicForm({ ...publicForm, judul: e.target.value })}
+                                                        placeholder="Contoh: Lampu Ruang Lab Komputer Mati"
+                                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block font-semibold text-slate-700 mb-1">Isi & Deskripsi Laporan Lengkap *</label>
+                                                    <textarea
+                                                        required
+                                                        rows={5}
+                                                        value={publicForm.deskripsi}
+                                                        onChange={(e) => setPublicForm({ ...publicForm, deskripsi: e.target.value })}
+                                                        placeholder="Uraikan detail pengaduan atau aspirasi Anda secara lengkap..."
+                                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                    ></textarea>
+                                                </div>
+
+                                                <button
+                                                    type="submit"
+                                                    className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                                                >
+                                                    <Icon name="send" className="w-4 h-4" /> Kirimkan Laporan Sekarang
+                                                </button>
+                                            </form>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 5: LACAK TIKET */}
+                            {activePublicTab === 'lacak' && (
+                                <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full">
+                                    <div className="bg-white p-8 rounded-3xl shadow-md border border-slate-200">
+                                        <div className="mb-6">
+                                            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                                                <Icon name="search" className="w-6 h-6 text-cyan-600" /> Pelacakan Status Pengaduan (Ticket Tracking)
+                                            </h2>
+                                            <p className="text-slate-600 text-sm">Masukkan Nomor Tiket dan Kode Akses untuk melihat perkembangan tindak lanjut petugas.</p>
+                                        </div>
+
+                                        <form onSubmit={handleTrackSubmit} className="space-y-4 text-xs mb-8">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block font-semibold text-slate-700 mb-1">Nomor Tiket *</label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={trackInput.ticketNo}
+                                                        onChange={(e) => setTrackInput({ ...trackInput, ticketNo: e.target.value })}
+                                                        placeholder="Contoh: SH-2026-0001"
+                                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-mono focus:ring-2 focus:ring-cyan-500 focus:outline-none uppercase"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block font-semibold text-slate-700 mb-1">Kode Akses Publik / Verifikasi</label>
+                                                    <input
+                                                        type="text"
+                                                        value={trackInput.accessCode}
+                                                        onChange={(e) => setTrackInput({ ...trackInput, accessCode: e.target.value })}
+                                                        placeholder="Contoh: 88219"
+                                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-mono focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {trackError && <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium">{trackError}</div>}
+
+                                            <button
+                                                type="submit"
+                                                className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                                            >
+                                                <Icon name="search" className="w-4 h-4" /> Cari Progres Laporan
+                                            </button>
+                                        </form>
+
+                                        {trackedResult && (
+                                            <div className="space-y-6 pt-6 border-t border-slate-100">
+                                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                    <div>
+                                                        <span className="font-mono text-xs font-bold text-cyan-700">{trackedResult.item.nomor_tiket}</span>
+                                                        <h3 className="font-bold text-base text-slate-900">{trackedResult.item.judul}</h3>
+                                                        <p className="text-xs text-slate-500 mt-1">Pelapor: {trackedResult.item.nama_pelapor} | Tanggal: {trackedResult.item.created_at}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-xs text-slate-400 block mb-1">Status Saat Ini:</span>
+                                                        <div className="px-3 py-1 rounded-full bg-cyan-100 text-cyan-900 font-bold text-xs inline-block">
+                                                            {trackedResult.item.status}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <h4 className="font-bold text-sm text-slate-900 mb-4">Timeline Tindak Lanjut Petugas</h4>
+                                                    <div className="space-y-4 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-200">
+                                                        {trackedResult.histories.map((h) => (
+                                                            <div key={h.id} className="relative pl-8">
+                                                                <div className="absolute left-0 top-1.5 w-7 h-7 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center font-bold text-xs shadow">
+                                                                    ✓
+                                                                </div>
+                                                                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                                                    <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                                                                        <span className="font-bold text-slate-800">{h.jenis_tindakan} ({h.petugas})</span>
+                                                                        <span>{h.tanggal}</span>
+                                                                    </div>
+                                                                    <p className="text-xs text-slate-700 leading-relaxed">{h.uraian}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 6: KONTAK & LOKASI PETA */}
+                            {activePublicTab === 'kontak' && (
+                                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
+                                    <div className="mb-8">
+                                        <h2 className="text-2xl font-bold text-slate-900">Kontak Resmi & Lokasi Peta Sekolah</h2>
+                                        <p className="text-slate-600 text-sm">Informasi alamat dan penanda lokasi resmi SMP Negeri 28 Malang.</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                                            <div>
+                                                <h3 className="font-bold text-lg text-slate-900 mb-4">Informasi Institusi</h3>
+                                                <div className="space-y-4 text-xs text-slate-700">
+                                                    <div className="flex items-start gap-3">
+                                                        <Icon name="map-pin" className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <div className="font-bold text-slate-900">Alamat Lengkap:</div>
+                                                            <p className="mt-1 leading-relaxed">
+                                                                Jl. Sadewo Nomor 39 RT. 06 RW. 03, Polehan, Kec. Blimbing, Kota Malang, Jawa Timur.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-start gap-3">
+                                                        <Icon name="mail" className="w-5 h-5 text-cyan-600 shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <div className="font-bold text-slate-900">Email Resmi Sekolah:</div>
+                                                            <a href="mailto:smpn28.mlg@gmail.com" className="text-cyan-600 font-bold hover:underline mt-1 block">
+                                                                smpn28.mlg@gmail.com
+                                                            </a>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-[11px] flex items-center gap-2">
+                                                        <Icon name="phone-off" className="w-4 h-4 text-slate-400" /> Kontak telepon resmi ditiadakan. Seluruh korespondensi dilakukan via email & portal.
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <a
+                                                href="mailto:smpn28.mlg@gmail.com"
+                                                className="w-full py-3 bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                                            >
+                                                <Icon name="mail" className="w-4 h-4" /> Kirim Email Ke Sekolah
+                                            </a>
+                                        </div>
+
+                                        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                                            <div>
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                                    <div>
+                                                        <h3 className="font-bold text-lg text-slate-900">Peta Google Maps Interaktif</h3>
+                                                        <p className="text-xs text-slate-500">Penanda Lokasi SMP Negeri 28 Malang (Polehan, Blimbing)</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <a
+                                                            href="https://www.google.com/maps/dir/?api=1&destination=Jl.+Sadewo+No.39,+RT.06/RW.03,+Polehan,+Kec.+Blimbing,+Kota+Malang"
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow"
+                                                        >
+                                                            <Icon name="navigation" className="w-3.5 h-3.5" /> Lihat Rute
+                                                        </a>
+                                                        <a
+                                                            href="https://maps.google.com/?q=Jl.+Sadewo+No.39,+RT.06/RW.03,+Polehan,+Kec.+Blimbing,+Kota+Malang"
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5"
+                                                        >
+                                                            <Icon name="external-link" className="w-3.5 h-3.5" /> Buka Google Maps
+                                                        </a>
+                                                    </div>
+                                                </div>
+
+                                                <div className="w-full h-80 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+                                                    <iframe
+                                                        title="Google Maps SMPN 28 Malang"
+                                                        src="https://maps.google.com/maps?q=Jl.%20Sadewo%20No.%2039%20Polehan%20Blimbing%20Kota%20Malang&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                                                        className="w-full h-full border-0"
+                                                        allowFullScreen=""
+                                                        loading="lazy"
+                                                    ></iframe>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* FOOTER PUBLIK */}
+                            <footer className="bg-slate-900 text-slate-400 text-xs py-8 border-t border-slate-800 mt-auto">
+                                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2">
+                                    <p className="font-bold text-slate-200">SCHOOLHUB — CONNECT. COMMUNICATE. CARE.</p>
+                                    <p>SMP NEGERI 28 MALANG — Jl. Sadewo Nomor 39 RT. 06 RW. 03, Polehan, Kec. Blimbing, Kota Malang</p>
+                                    <p className="text-slate-500 text-[11px]">Email Resmi: smpn28.mlg@gmail.com</p>
+                                </div>
+                            </footer>
+                        </div>
+                    )}
+
+                    {/* STANDALONE LOGIN PAGE FOR STAFF DASHBOARD */}
+                    {activePortal === 'login' && (
+                        <div className="flex-1 bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+                            <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative z-10 space-y-6">
+                                <div className="text-center space-y-2">
+                                    <div className="w-14 h-14 bg-gradient-to-tr from-cyan-500 to-blue-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-cyan-500/20">
+                                        <Icon name="shield-check" className="w-8 h-8" />
+                                    </div>
+                                    <h2 className="text-2xl font-black tracking-tight text-white">PORTAL LOGIN PETUGAS</h2>
+                                    <p className="text-xs text-slate-400">SCHOOLHUB SMP NEGERI 28 MALANG</p>
+                                </div>
+
+                                <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
+                                    <div>
+                                        <label className="block font-semibold text-slate-300 mb-1">Username Petugas</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={loginForm.username}
+                                            onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                                            placeholder="Masukkan username Anda"
+                                            className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block font-semibold text-slate-300 mb-1">Kata Sandi</label>
+                                        <input
+                                            type="password"
+                                            required
+                                            value={loginForm.password}
+                                            onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                                            placeholder="••••••••"
+                                            className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block font-semibold text-slate-300 mb-1">Hak Akses / Unit Jabatan</label>
+                                        <select
+                                            value={loginForm.role}
+                                            onChange={(e) => setLoginForm({ ...loginForm, role: e.target.value })}
+                                            className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                        >
+                                            <option value="Administrator & Tim IT">Administrator Utama & Tim IT</option>
+                                            <option value="Notulis Rapat & Humas">Notulis Rapat & Humas</option>
+                                            <option value="Petugas Sarpras & Kesiswaan">Petugas Sarpras & Kesiswaan</option>
+                                        </select>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-sm rounded-xl shadow-lg transition-all"
+                                    >
+                                        Masuk Ke Dashboard Petugas
+                                    </button>
+                                </form>
+
+                                <div className="text-center">
+                                    <button onClick={() => setActivePortal('public')} className="text-xs text-slate-500 hover:text-cyan-400 transition-colors">
+                                        ← Kembali Ke Halaman Publik
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* STAFF EXECUTIVE DASHBOARD */}
+                    {activePortal === 'dashboard' && (
+                        <div className="flex-1 flex flex-col md:flex-row bg-slate-100">
+                            {/* DASHBOARD SIDEBAR */}
+                            <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800">
+                                <div className="p-4 space-y-6">
+                                    <div className="flex items-center gap-3 p-2 bg-slate-800/60 rounded-xl border border-slate-800">
+                                        <img src={userProfile.avatar} alt="Avatar" className="w-10 h-10 rounded-full object-cover border border-cyan-500" />
+                                        <div className="overflow-hidden">
+                                            <div className="font-bold text-white text-xs truncate">{userProfile.name}</div>
+                                            <div className="text-[10px] text-cyan-400 truncate">{userProfile.role}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 text-xs">
+                                        <div>
+                                            <div className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">MENU UTAMA</div>
+                                            <nav className="space-y-1">
+                                                {[
+                                                    { id: 'dashboard', label: 'Dashboard Statistik', icon: 'bar-chart-3' },
+                                                    { id: 'buku-tamu-dash', label: 'Buku Tamu Kelola', icon: 'user-check' },
+                                                    { id: 'dokumentasi-dash', label: 'Kelola Dokumentasi', icon: 'image' },
+                                                    { id: 'notulen-dash', label: 'Notulen & Transkrip', icon: 'file-text' },
+                                                    { id: 'aspirasi-dash', label: 'Aspirasi & Pengaduan', icon: 'message-square' }
+                                                ].map((m) => (
+                                                    <button
+                                                        key={m.id}
+                                                        onClick={() => setActiveDashboardMenu(m.id)}
+                                                        className={`w-full px-3 py-2 rounded-xl flex items-center gap-2.5 font-medium transition-all ${
+                                                            activeDashboardMenu === m.id
+                                                                ? 'bg-cyan-500 text-slate-950 font-bold'
+                                                                : 'hover:bg-slate-800 text-slate-400'
+                                                        }`}
+                                                    >
+                                                        <Icon name={m.icon} className="w-4 h-4" /> {m.label}
+                                                    </button>
+                                                ))}
+                                            </nav>
+                                        </div>
+
+                                        <div>
+                                            <div className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">PENGELOLAAN</div>
+                                            <nav className="space-y-1">
+                                                {[
+                                                    { id: 'arsip-notulen', label: 'Arsip Notulen Rapat', icon: 'database' },
+                                                    { id: 'profil', label: 'Profil Saya', icon: 'user' }
+                                                ].map((m) => (
+                                                    <button
+                                                        key={m.id}
+                                                        onClick={() => setActiveDashboardMenu(m.id)}
+                                                        className={`w-full px-3 py-2 rounded-xl flex items-center gap-2.5 font-medium transition-all ${
+                                                            activeDashboardMenu === m.id
+                                                                ? 'bg-cyan-500 text-slate-950 font-bold'
+                                                                : 'hover:bg-slate-800 text-slate-400'
+                                                        }`}
+                                                    >
+                                                        <Icon name={m.icon} className="w-4 h-4" /> {m.label}
+                                                    </button>
+                                                ))}
+                                            </nav>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 border-t border-slate-800 space-y-2">
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-rose-400 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all"
+                                    >
+                                        <Icon name="log-out" className="w-4 h-4" /> Keluar Dashboard
+                                    </button>
+                                </div>
+                            </aside>
+
+                            {/* DASHBOARD CONTENT AREA */}
+                            <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+                                {/* MENU: STATISTIK DASHBOARD */}
+                                {activeDashboardMenu === 'dashboard' && (
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <h2 className="text-2xl font-black text-slate-900">Dashboard Pengelolaan SCHOOLHUB</h2>
+                                                <p className="text-xs text-slate-500">Ringkasan status pengaduan, dokumen, dan buku tamu SMPN 28 Malang</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                                                <div className="text-slate-500 text-xs font-semibold mb-1">Total Aspirasi / Pengaduan</div>
+                                                <div className="text-3xl font-black text-slate-900">{aspirasiList.length}</div>
+                                                <div className="text-[11px] text-emerald-600 mt-2 font-medium">100% Tercatat Terstruktur</div>
+                                            </div>
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                                                <div className="text-slate-500 text-xs font-semibold mb-1">Dalam Proses Tindak Lanjut</div>
+                                                <div className="text-3xl font-black text-indigo-600">
+                                                    {aspirasiList.filter(a => a.status === 'Dalam Proses Tindak Lanjut').length}
+                                                </div>
+                                                <div className="text-[11px] text-indigo-600 mt-2 font-medium">Penanganan Aktif Petugas</div>
+                                            </div>
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                                                <div className="text-slate-500 text-xs font-semibold mb-1">Laporan Selesai Ditangani</div>
+                                                <div className="text-3xl font-black text-emerald-600">
+                                                    {aspirasiList.filter(a => a.status === 'Selesai').length}
+                                                </div>
+                                                <div className="text-[11px] text-emerald-600 mt-2 font-medium">Terverifikasi Tuntas</div>
+                                            </div>
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                                                <div className="text-slate-500 text-xs font-semibold mb-1">Tamu Hadir Terverifikasi</div>
+                                                <div className="text-3xl font-black text-cyan-600">{guestbookList.length}</div>
+                                                <div className="text-[11px] text-cyan-600 mt-2 font-medium">Buku Tamu Digital</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* MENU: BUKU TAMU KELOLA */}
+                                {activeDashboardMenu === 'buku-tamu-dash' && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h2 className="text-2xl font-black text-slate-900">Manajemen Buku Tamu Digital</h2>
+                                            <p className="text-xs text-slate-500">Verifikasi dan catat penerima tamu kunjungan sekolah</p>
+                                        </div>
+
+                                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                            <table className="w-full text-left text-xs text-slate-600">
+                                                <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                                                    <tr>
+                                                        <th className="py-3 px-4">Waktu</th>
+                                                        <th className="py-3 px-4">Nama Tamu</th>
+                                                        <th className="py-3 px-4">Instansi</th>
+                                                        <th className="py-3 px-4">Maksud Kunjungan</th>
+                                                        <th className="py-3 px-4">Status</th>
+                                                        <th className="py-3 px-4">Aksi Verifikasi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {guestbookList.map((g) => (
+                                                        <tr key={g.id} className="hover:bg-slate-50">
+                                                            <td className="py-3 px-4 font-mono text-slate-500">{g.date}</td>
+                                                            <td className="py-3 px-4 font-bold text-slate-900">{g.name}</td>
+                                                            <td className="py-3 px-4">{g.agency}</td>
+                                                            <td className="py-3 px-4">{g.purpose}</td>
+                                                            <td className="py-3 px-4">
+                                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                                                    g.status === 'Terverifikasi' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                                                }`}>
+                                                                    {g.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-3 px-4">
+                                                                {g.status !== 'Terverifikasi' && (
+                                                                    <button
+                                                                        onClick={() => handleVerifyGuest(g.id)}
+                                                                        className="px-3 py-1 bg-cyan-500 text-slate-950 font-bold rounded-lg text-[10px]"
+                                                                    >
+                                                                        Verifikasi Tamu
+                                                                    </button>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* MENU: KELOLA DOKUMENTASI */}
+                                {activeDashboardMenu === 'dokumentasi-dash' && (
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <h2 className="text-2xl font-black text-slate-900">Kelola Dokumentasi Kegiatan</h2>
+                                                <p className="text-xs text-slate-500">Unggah foto/berkas langsung dari perangkat lokal</p>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setEditingDokumentasi(null);
+                                                    setDokForm({
+                                                        nama_kegiatan: '',
+                                                        kategori: 'Kegiatan Sekolah',
+                                                        tanggal_kegiatan: new Date().toISOString().slice(0, 10),
+                                                        lokasi: '',
+                                                        penanggung_jawab: '',
+                                                        deskripsi: '',
+                                                        foto_sampul_url: ''
+                                                    });
+                                                    setIsDokumentasiModalOpen(true);
+                                                }}
+                                                className="px-4 py-2.5 bg-slate-900 text-cyan-400 font-bold text-xs rounded-xl shadow flex items-center gap-2"
+                                            >
+                                                <Icon name="plus" className="w-4 h-4" /> Tambah Dokumentasi
+                                            </button>
+                                        </div>
+
+                                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                            <table className="w-full text-left text-xs text-slate-600">
+                                                <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                                                    <tr>
+                                                        <th className="py-3 px-4">Nama Kegiatan</th>
+                                                        <th className="py-3 px-4">Kategori</th>
+                                                        <th className="py-3 px-4">Tanggal</th>
+                                                        <th className="py-3 px-4">Lokasi</th>
+                                                        <th className="py-3 px-4">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {dokumentasiList.map((dok) => (
+                                                        <tr key={dok.id} className="hover:bg-slate-50">
+                                                            <td className="py-3 px-4 font-bold text-slate-900">{dok.nama_kegiatan}</td>
+                                                            <td className="py-3 px-4">{dok.kategori}</td>
+                                                            <td className="py-3 px-4">{dok.tanggal_kegiatan}</td>
+                                                            <td className="py-3 px-4">{dok.lokasi}</td>
+                                                            <td className="py-3 px-4 flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingDokumentasi(dok);
+                                                                        setDokForm(dok);
+                                                                        setIsDokumentasiModalOpen(true);
+                                                                    }}
+                                                                    className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg"
+                                                                >
+                                                                    <Icon name="edit" className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteDokumentasi(dok.id)}
+                                                                    className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg"
+                                                                >
+                                                                    <Icon name="trash-2" className="w-4 h-4" />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* MENU: NOTULEN & TRANSKRIP */}
+                                {activeDashboardMenu === 'notulen-dash' && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h2 className="text-2xl font-black text-slate-900">Pencatat Notulen & Transkrip Suara</h2>
+                                            <p className="text-xs text-slate-500">Mendukung pengisian manual dan transkripsi suara otomatis (Speech-to-Text)</p>
+                                        </div>
+
+                                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                                            <div className="flex items-center justify-between p-3 bg-slate-900 text-white rounded-xl">
+                                                <span className="text-xs font-mono text-cyan-400">{autosaveStatus}</span>
+                                                <button
+                                                    onClick={toggleRecording}
+                                                    className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+                                                        isRecording ? 'bg-rose-600 text-white animate-pulse' : 'bg-cyan-500 text-slate-950'
+                                                    }`}
+                                                >
+                                                    <Icon name={isRecording ? "mic-off" : "mic"} className="w-4 h-4"/>
+                                                    {isRecording ? 'Hentikan Perekaman' : 'Mulai Perekaman Suara Rapat'}
+                                                </button>
+                                            </div>
+
+                                            <form onSubmit={handleSaveNotulen} className="space-y-4 text-xs">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block font-semibold text-slate-700 mb-1">Judul Rapat *</label>
+                                                        <input
+                                                            type="text"
+                                                            required
+                                                            value={notulenForm.judul_rapat}
+                                                            onChange={(e) => setNotulenForm({ ...notulenForm, judul_rapat: e.target.value })}
+                                                            placeholder="Judul Rapat..."
+                                                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block font-semibold text-slate-700 mb-1">Jenis Rapat</label>
+                                                        <select
+                                                            value={notulenForm.jenis_rapat}
+                                                            onChange={(e) => setNotulenForm({ ...notulenForm, jenis_rapat: e.target.value })}
+                                                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                        >
+                                                            <option value="Rapat Dinas">Rapat Dinas</option>
+                                                            <option value="Rapat Komite">Rapat Komite</option>
+                                                            <option value="Rapat Kurikulum">Rapat Kurikulum</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block font-semibold text-slate-700 mb-1">Hasil Pembahasan & Catatan Rapat *</label>
+                                                    <textarea
+                                                        required
+                                                        rows={6}
+                                                        value={notulenForm.hasil_pembahasan}
+                                                        onChange={(e) => setNotulenForm({ ...notulenForm, hasil_pembahasan: e.target.value })}
+                                                        placeholder="Tuliskan poin hasil pembahasan rapat..."
+                                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                    ></textarea>
+                                                </div>
+
+                                                <button
+                                                    type="submit"
+                                                    className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold text-sm rounded-xl shadow flex items-center gap-2"
+                                                >
+                                                    <Icon name="save" className="w-4 h-4" /> Simpan Ke Arsip Notulen
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* MENU: ASPIRASI & PENGADUAN KELOLA */}
+                                {activeDashboardMenu === 'aspirasi-dash' && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h2 className="text-2xl font-black text-slate-900">Manajemen Aspirasi & Pengaduan</h2>
+                                            <p className="text-xs text-slate-500">Kelola tiket aduan dan tindak lanjut petugas</p>
+                                        </div>
+
+                                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                            <table className="w-full text-left text-xs text-slate-600">
+                                                <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                                                    <tr>
+                                                        <th className="py-3 px-4">No. Tiket</th>
+                                                        <th className="py-3 px-4">Pelapor</th>
+                                                        <th className="py-3 px-4">Judul Laporan</th>
+                                                        <th className="py-3 px-4">Status</th>
+                                                        <th className="py-3 px-4">Aksi Tindak Lanjut</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {aspirasiList.map((item) => (
+                                                        <tr key={item.id} className="hover:bg-slate-50">
+                                                            <td className="py-3 px-4 font-mono font-bold text-cyan-700">{item.nomor_tiket}</td>
+                                                            <td className="py-3 px-4">{item.nama_pelapor}</td>
+                                                            <td className="py-3 px-4 font-semibold text-slate-900">{item.judul}</td>
+                                                            <td className="py-3 px-4">{renderStatusBadge(item.status)}</td>
+                                                            <td className="py-3 px-4">
+                                                                <button
+                                                                    onClick={() => openFollowUpModal(item)}
+                                                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-[11px] flex items-center gap-1 shadow"
+                                                                >
+                                                                    <Icon name="edit" className="w-3.5 h-3.5" /> Tindak Lanjut
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* MENU: ARSIP NOTULEN */}
+                                {activeDashboardMenu === 'arsip-notulen' && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h2 className="text-2xl font-black text-slate-900">Arsip Notulen Rapat</h2>
+                                            <p className="text-xs text-slate-500">Buka dan periksa seluruh catatan notulen hasil rapat</p>
+                                        </div>
+
+                                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                            <table className="w-full text-left text-xs text-slate-600">
+                                                <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                                                    <tr>
+                                                        <th className="py-3 px-4">ID Notulen</th>
+                                                        <th className="py-3 px-4">Judul Rapat</th>
+                                                        <th className="py-3 px-4">Tanggal</th>
+                                                        <th className="py-3 px-4">Notulis</th>
+                                                        <th className="py-3 px-4">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {notulenList.map((n) => (
+                                                        <tr key={n.id} className="hover:bg-slate-50">
+                                                            <td className="py-3 px-4 font-mono font-bold text-blue-600">{n.id}</td>
+                                                            <td className="py-3 px-4 font-bold text-slate-900">{n.judul_rapat}</td>
+                                                            <td className="py-3 px-4">{n.tanggal_rapat}</td>
+                                                            <td className="py-3 px-4">{n.notulis_nama}</td>
+                                                            <td className="py-3 px-4">
+                                                                <button
+                                                                    onClick={() => setSelectedNotulenDetail(n)}
+                                                                    className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold rounded-lg text-[11px] flex items-center gap-1"
+                                                                >
+                                                                    <Icon name="eye" className="w-3.5 h-3.5" /> Lihat Detail Notulen
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* MENU: PROFIL SAYA */}
+                                {activeDashboardMenu === 'profil' && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h2 className="text-2xl font-black text-slate-900">Profil Petugas Saya</h2>
+                                            <p className="text-xs text-slate-500">Kelola identitas akun dan keamanan password</p>
+                                        </div>
+
+                                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                            <form onSubmit={handleProfileSubmit} className="space-y-4 text-xs">
+                                                <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
+                                                    <img src={userProfile.avatar} alt="Avatar" className="w-16 h-16 rounded-full object-cover border-2 border-cyan-500" />
+                                                    <div>
+                                                        <h3 className="font-bold text-base text-slate-900">{userProfile.name}</h3>
+                                                        <p className="text-slate-500">{userProfile.role}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block font-semibold text-slate-700 mb-1">Nama Lengkap</label>
+                                                        <input
+                                                            type="text"
+                                                            value={profileForm.name}
+                                                            onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                                                            className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block font-semibold text-slate-700 mb-1">Email</label>
+                                                        <input
+                                                            type="email"
+                                                            value={profileForm.email}
+                                                            onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                                                            className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    type="submit"
+                                                    className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold rounded-xl shadow"
+                                                >
+                                                    Simpan Perubahan Profil
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                )}
+                            </main>
+                        </div>
+                    )}
+
+                    {/* MODALS SECTION */}
+                    {/* PUBLIC DOCUMENTATION DETAIL VIEWER MODAL */}
+                    {selectedPublicDokumentasi && (
+                        <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+                            <div className="bg-white max-w-3xl w-full rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-8 max-h-[90vh] flex flex-col">
+                                <div className="relative h-64 sm:h-80 bg-slate-900 overflow-hidden shrink-0">
+                                    <img
+                                        src={selectedPublicDokumentasi.foto_sampul_url}
+                                        alt={selectedPublicDokumentasi.nama_kegiatan}
+                                        className="w-full h-full object-cover opacity-90"
+                                    />
+                                    <button
+                                        onClick={() => setSelectedPublicDokumentasi(null)}
+                                        className="absolute top-4 right-4 p-2 bg-slate-950/60 hover:bg-slate-950/90 text-white rounded-full backdrop-blur-sm transition-all"
+                                    >
+                                        <Icon name="x-circle" className="w-6 h-6" />
+                                    </button>
+                                    <div className="absolute bottom-4 left-6 right-6 text-white space-y-1">
+                                        <span className="px-3 py-1 bg-cyan-500 text-slate-950 font-black text-[10px] rounded-lg tracking-wider uppercase">
+                                            {selectedPublicDokumentasi.kategori}
+                                        </span>
+                                        <h3 className="text-xl sm:text-2xl font-black">{selectedPublicDokumentasi.nama_kegiatan}</h3>
+                                    </div>
+                                </div>
+
+                                <div className="p-6 overflow-y-auto space-y-6 text-xs text-slate-700 flex-1">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                                        <div>
+                                            <div className="text-[10px] font-semibold text-slate-400 uppercase">Tanggal Kegiatan</div>
+                                            <div className="font-bold text-slate-900 flex items-center gap-1 mt-0.5"><Icon name="calendar" className="w-3.5 h-3.5 text-cyan-600"/> {selectedPublicDokumentasi.tanggal_kegiatan}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] font-semibold text-slate-400 uppercase">Lokasi</div>
+                                            <div className="font-bold text-slate-900 flex items-center gap-1 mt-0.5"><Icon name="map-pin" className="w-3.5 h-3.5 text-rose-500"/> {selectedPublicDokumentasi.lokasi}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] font-semibold text-slate-400 uppercase">Penanggung Jawab</div>
+                                            <div className="font-bold text-slate-900 flex items-center gap-1 mt-0.5"><Icon name="user" className="w-3.5 h-3.5 text-emerald-600"/> {selectedPublicDokumentasi.penanggung_jawab}</div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="font-bold text-sm text-slate-900 mb-2">Deskripsi Lengkap Kegiatan:</h4>
+                                        <p className="text-slate-600 leading-relaxed text-sm bg-slate-50/50 p-4 rounded-2xl border border-slate-100 whitespace-pre-line">
+                                            {selectedPublicDokumentasi.deskripsi}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex justify-end pt-4 border-t border-slate-100">
+                                        <button
+                                            onClick={() => setSelectedPublicDokumentasi(null)}
+                                            className="px-6 py-2.5 bg-slate-900 text-cyan-400 font-bold rounded-xl hover:bg-slate-800 transition-all shadow-md"
+                                        >
+                                            Tutup Tampilan Galeri
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* NOTULEN ARCHIVE DETAIL VIEWER MODAL */}
+                    {selectedNotulenDetail && (
+                        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+                            <div className="bg-white max-w-3xl w-full rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-6 my-8 max-h-[90vh] overflow-y-auto">
+                                <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                                    <div>
+                                        <span className="font-mono text-xs font-bold text-blue-600">{selectedNotulenDetail.id}</span>
+                                        <h3 className="text-lg font-bold text-slate-900">{selectedNotulenDetail.judul_rapat}</h3>
+                                    </div>
+                                    <button onClick={() => setSelectedNotulenDetail(null)} className="p-2 hover:bg-slate-100 rounded-lg">
+                                        <Icon name="x-circle" className="w-5 h-5 text-slate-400" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-4 text-xs text-slate-800">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                        <div>Jenis: <span className="font-bold">{selectedNotulenDetail.jenis_rapat}</span></div>
+                                        <div>Tanggal: <span className="font-bold">{selectedNotulenDetail.tanggal_rapat}</span></div>
+                                        <div>Pimpinan: <span className="font-bold">{selectedNotulenDetail.pimpinan_rapat}</span></div>
+                                        <div>Notulis: <span className="font-bold">{selectedNotulenDetail.notulis_nama}</span></div>
+                                    </div>
+
+                                    <div>
+                                        <div className="font-bold text-slate-900 mb-1">Hasil Pembahasan:</div>
+                                        <p className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-700 leading-relaxed whitespace-pre-line">
+                                            {selectedNotulenDetail.hasil_pembahasan}
+                                        </p>
+                                    </div>
+
+                                    {selectedNotulenDetail.transkrip_audio && (
+                                        <div>
+                                            <div className="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+                                                <Icon name="mic" className="w-4 h-4 text-blue-600" /> Transkrip Rekaman Audio Suara:
+                                            </div>
+                                            <pre className="p-3 bg-slate-900 text-cyan-300 font-mono text-[11px] rounded-xl overflow-x-auto whitespace-pre-line">
+                                                {selectedNotulenDetail.transkrip_audio}
+                                            </pre>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                                        <button
+                                            onClick={() => {
+                                                showToast('Dokumen notulen dikirim ke antrean cetak...');
+                                                window.print();
+                                            }}
+                                            className="px-4 py-2 bg-slate-900 text-cyan-400 rounded-xl font-bold flex items-center gap-1.5"
+                                        >
+                                            <Icon name="printer" className="w-4 h-4" /> Cetak Notulen
+                                        </button>
+                                        <button
+                                            onClick={() => setSelectedNotulenDetail(null)}
+                                            className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold"
+                                        >
+                                            Tutup
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* FOLLOW UP MODAL */}
+                    {isFollowUpModalOpen && selectedTicketDetail && (
+                        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+                            <div className="bg-white max-w-3xl w-full rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-6 my-8 max-h-[90vh] overflow-y-auto">
+                                <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                                    <div>
+                                        <span className="font-mono text-xs font-bold text-cyan-600">{selectedTicketDetail.nomor_tiket}</span>
+                                        <h3 className="text-lg font-bold text-slate-900">{selectedTicketDetail.judul}</h3>
+                                    </div>
+                                    <button onClick={() => setIsFollowUpModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                                        <Icon name="x-circle" className="w-5 h-5 text-slate-400" />
+                                    </button>
+                                </div>
+
+                                <form onSubmit={handleSaveFollowUp} className="space-y-4 text-xs">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">Petugas Penanggung Jawab *</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={followUpForm.petugas_pj}
+                                                onChange={(e) => setFollowUpForm({ ...followUpForm, petugas_pj: e.target.value })}
+                                                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">Prioritas Penanganan</label>
+                                            <select
+                                                value={followUpForm.prioritas}
+                                                onChange={(e) => setFollowUpForm({ ...followUpForm, prioritas: e.target.value })}
+                                                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            >
+                                                <option value="Rendah">Rendah</option>
+                                                <option value="Sedang">Sedang</option>
+                                                <option value="Tinggi">Tinggi</option>
+                                                <option value="Mendesak">Mendesak</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">Ubah Status Laporan *</label>
+                                            <select
+                                                value={followUpForm.new_status}
+                                                onChange={(e) => setFollowUpForm({ ...followUpForm, new_status: e.target.value })}
+                                                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 font-bold focus:outline-none"
+                                            >
+                                                <option value="Diterima">1. Diterima</option>
+                                                <option value="Menunggu Verifikasi">2. Menunggu Verifikasi</option>
+                                                <option value="Sedang Ditinjau">3. Sedang Ditinjau</option>
+                                                <option value="Dalam Proses Tindak Lanjut">4. Dalam Proses Tindak Lanjut</option>
+                                                <option value="Menunggu Konfirmasi">5. Menunggu Konfirmasi</option>
+                                                <option value="Selesai">6. Selesai (Wajib Rincian Final)</option>
+                                                <option value="Tidak Dapat Ditindaklanjuti">7. Tidak Dapat Ditindaklanjuti (Wajib Alasan)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block font-semibold text-slate-700 mb-1">Uraian Tindakan Saat Ini</label>
+                                        <textarea
+                                            rows={2}
+                                            value={followUpForm.uraian_tindakan}
+                                            onChange={(e) => setFollowUpForm({ ...followUpForm, uraian_tindakan: e.target.value })}
+                                            placeholder="Catat tindakan pemeriksaan atau perbaikan yang dilakukan..."
+                                            className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        ></textarea>
+                                    </div>
+
+                                    {followUpForm.new_status === 'Selesai' && (
+                                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3">
+                                            <div className="font-bold text-emerald-900 flex items-center gap-2">
+                                                <Icon name="check-circle-2" className="w-4 h-4 text-emerald-600" /> Wajib Mengisi Informasi Penyelesaian Final
+                                            </div>
+                                            <div>
+                                                <label className="block font-semibold text-slate-700 mb-1">Ringkasan Hasil Penyelesaian *</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={followUpForm.ringkasan_hasil}
+                                                    onChange={(e) => setFollowUpForm({ ...followUpForm, ringkasan_hasil: e.target.value })}
+                                                    placeholder="Contoh: Perbaikan jaringan kabel LAN telah selesai 100%."
+                                                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block font-semibold text-slate-700 mb-1">Tindakan Akhir Yang Dilakukan *</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={followUpForm.tindakan_akhir}
+                                                    onChange={(e) => setFollowUpForm({ ...followUpForm, tindakan_akhir: e.target.value })}
+                                                    placeholder="Contoh: Pemasangan ducting dan pengujian daya tahan."
+                                                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block font-semibold text-slate-700 mb-1">Catatan Penyelesaian *</label>
+                                                <textarea
+                                                    rows={2}
+                                                    required
+                                                    value={followUpForm.catatan_penyelesaian}
+                                                    onChange={(e) => setFollowUpForm({ ...followUpForm, catatan_penyelesaian: e.target.value })}
+                                                    placeholder="Catatan penutup..."
+                                                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                                ></textarea>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {followUpForm.new_status === 'Tidak Dapat Ditindaklanjuti' && (
+                                        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-3">
+                                            <div className="font-bold text-rose-900 flex items-center gap-2">
+                                                <Icon name="x-circle" className="w-4 h-4 text-rose-600" /> Wajib Alasan Penolakan
+                                            </div>
+                                            <div>
+                                                <label className="block font-semibold text-slate-700 mb-1">Alasan Penolakan *</label>
+                                                <textarea
+                                                    rows={2}
+                                                    required
+                                                    value={followUpForm.alasan_penolakan}
+                                                    onChange={(e) => setFollowUpForm({ ...followUpForm, alasan_penolakan: e.target.value })}
+                                                    placeholder="Tuliskan penjelasan rasional penolakan..."
+                                                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                                                ></textarea>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsFollowUpModalOpen(false)}
+                                            className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow"
+                                        >
+                                            Simpan Tindak Lanjut
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DOKUMENTASI UPLOAD / EDIT MODAL */}
+                    {isDokumentasiModalOpen && (
+                        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+                            <div className="bg-white max-w-2xl w-full rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-6 my-8">
+                                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                                    <h3 className="text-lg font-bold text-slate-900">
+                                        {editingDokumentasi ? 'Edit Dokumentasi Kegiatan' : '+ Tambah Dokumentasi Kegiatan'}
+                                    </h3>
+                                    <button onClick={() => setIsDokumentasiModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                                        <Icon name="x-circle" className="w-5 h-5 text-slate-400" />
+                                    </button>
+                                </div>
+
+                                <form onSubmit={handleSaveDokumentasi} className="space-y-4 text-xs">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">Nama Kegiatan *</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={dokForm.nama_kegiatan}
+                                                onChange={(e) => setDokForm({ ...dokForm, nama_kegiatan: e.target.value })}
+                                                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">Kategori</label>
+                                            <select
+                                                value={dokForm.kategori}
+                                                onChange={(e) => setDokForm({ ...dokForm, kategori: e.target.value })}
+                                                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            >
+                                                <option value="Akademik">Akademik</option>
+                                                <option value="Kesiswaan">Kesiswaan</option>
+                                                <option value="Prestasi">Prestasi</option>
+                                                <option value="Kemitraan">Kemitraan</option>
+                                                <option value="Kegiatan Sosial">Kegiatan Sosial</option>
+                                                <option value="Kegiatan Sekolah">Kegiatan Sekolah</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">Tanggal Kegiatan</label>
+                                            <input
+                                                type="date"
+                                                value={dokForm.tanggal_kegiatan}
+                                                onChange={(e) => setDokForm({ ...dokForm, tanggal_kegiatan: e.target.value })}
+                                                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">Lokasi *</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={dokForm.lokasi}
+                                                onChange={(e) => setDokForm({ ...dokForm, lokasi: e.target.value })}
+                                                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">Penanggung Jawab</label>
+                                            <input
+                                                type="text"
+                                                value={dokForm.penanggung_jawab}
+                                                onChange={(e) => setDokForm({ ...dokForm, penanggung_jawab: e.target.value })}
+                                                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block font-semibold text-slate-700 mb-1">Deskripsi Kegiatan</label>
+                                        <textarea
+                                            rows={3}
+                                            value={dokForm.deskripsi}
+                                            onChange={(e) => setDokForm({ ...dokForm, deskripsi: e.target.value })}
+                                            className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        ></textarea>
+                                    </div>
+
+                                    <div>
+                                        <label className="block font-semibold text-slate-700 mb-1">Unggah Berkas Foto / Dokumen (Direct Upload)</label>
+                                        <div className="border-2 border-dashed border-slate-300 p-6 rounded-2xl text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer relative">
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept="image/*,.pdf,.docx,.xlsx"
+                                                onChange={handleFileUploadDemo}
+                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                            />
+                                            <Icon name="upload" className="w-8 h-8 text-cyan-600 mx-auto mb-2" />
+                                            <div className="font-bold text-slate-900">Drag & Drop file di sini atau Klik Pilih Berkas</div>
+                                            <div className="text-[11px] text-slate-400 mt-1">Mendukung JPG, PNG, PDF, DOCX (Maks. 25MB)</div>
+                                        </div>
+
+                                        {uploadedFilesDemo.length > 0 && (
+                                            <div className="mt-3 space-y-2">
+                                                {uploadedFilesDemo.map((f, i) => (
+                                                    <div key={i} className="flex items-center justify-between p-2 bg-slate-100 rounded-lg text-xs">
+                                                        <span className="truncate font-mono">{f.name} ({f.size})</span>
+                                                        <button type="button" onClick={() => removeUploadedFile(i)} className="text-rose-600 hover:underline font-bold">Hapus</button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsDokumentasiModalOpen(false)}
+                                            className="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-cyan-400 rounded-xl font-bold shadow"
+                                        >
+                                            Simpan Dokumentasi
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
+    </script>
+</body>
+</html>
