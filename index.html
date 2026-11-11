@@ -370,6 +370,10 @@
                             .from('aspirasi_laporan').select('*').order('created_at', { ascending: false });
                         if (!rowsError && mounted) setAspirasiList(rows || []);
                         else if (rowsError) console.error('Gagal memuat laporan:', rowsError.message);
+                        const { data: guests, error: guestsError } = await supabaseClient
+                            .from('buku_tamu').select('*').order('date', { ascending: false });
+                        if (!guestsError && mounted) setGuestbookList(guests || []);
+                        else if (guestsError) console.error('Gagal memuat buku tamu:', guestsError.message);
                     }
                 };
                 restoreSession();
@@ -409,6 +413,10 @@
                 } else {
                     setAspirasiList(rows || []);
                 }
+                const { data: guests, error: guestsError } = await supabaseClient
+                    .from('buku_tamu').select('*').order('date', { ascending: false });
+                if (guestsError) console.error('Supabase guestbook load error:', guestsError.message);
+                else setGuestbookList(guests || []);
                 setUserProfile((prev) => ({ ...prev, email: data.user?.email || loginForm.email }));
                 setActivePortal('dashboard');
                 showToast('Login admin berhasil. Selamat datang di SchoolHub!');
