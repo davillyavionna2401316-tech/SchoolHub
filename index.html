@@ -286,7 +286,7 @@
             // App Data States
             const [aspirasiList, setAspirasiList] = useState([]);
             const [riwayatList, setRiwayatList] = useState(INITIAL_RIWAYAT_TINDAK_LANJUT);
-            const [dokumentasiList, setDokumentasiList] = useState(INITIAL_DOKUMENTASI);
+            const [dokumentasiList, setDokumentasiList] = useState([]);
             const [notulenList, setNotulenList] = useState([]);
             const [guestbookList, setGuestbookList] = useState(INITIAL_GUESTBOOK);
 
@@ -364,6 +364,13 @@
             useEffect(() => {
                 let mounted = true;
                 const restoreSession = async () => {
+                    const { data: publicDocs, error: publicDocsError } = await supabaseClient
+                        .from('dokumentasi_kegiatan').select('*')
+                        .eq('status_publikasi', 'Published')
+                        .order('tanggal_kegiatan', { ascending: false });
+                    if (!publicDocsError && mounted) setDokumentasiList(publicDocs || []);
+                    else if (publicDocsError) console.error('Gagal memuat dokumentasi publik:', publicDocsError.message);
+
                     const { data, error } = await supabaseClient.auth.getSession();
                     if (error) console.error('Gagal memeriksa sesi:', error.message);
                     if (!mounted) return;
@@ -382,6 +389,10 @@
                             .from('buku_tamu').select('*').order('date', { ascending: false });
                         if (!guestsError && mounted) setGuestbookList(guests || []);
                         else if (guestsError) console.error('Gagal memuat buku tamu:', guestsError.message);
+                        const { data: docs, error: docsError } = await supabaseClient
+                            .from('dokumentasi_kegiatan').select('*').order('tanggal_kegiatan', { ascending: false });
+                        if (!docsError && mounted) setDokumentasiList(docs || []);
+                        else if (docsError) console.error('Gagal memuat dokumentasi:', docsError.message);
                         const { data: minutes, error: minutesError } = await supabaseClient
                             .from('notulen_rapat').select('*').order('created_at', { ascending: false });
                         if (!minutesError && mounted) setNotulenList(minutes || []);
@@ -721,46 +732,73 @@
                 setUploadedFilesDemo(updated);
             };
 
-            const handleDeleteDokumentasi = (id) => {
-                if (confirm('Apakah Anda yakin ingin menghapus dokumentasi ini?')) {
-                    setDokumentasiList(dokumentasiList.filter(d => d.id !== id));
-                    showToast('Dokumentasi telah dihapus.');
+            const handleDeleteDokumentasi = async (id) => {
+                if (!confirm('Apakah Anda yakin ingin menghapus dokumentasi ini?')) return;
+                const { error } = await supabaseClient
+                    .from('dokumentasi_kegiatan')
+                    .delete()
+                    .eq('id', id);
+                if (error) {
+                    console.error('Gagal menghapus dokumentasi:', error.message);
+                    showToast('Dokumentasi gagal dihapus: ' + error.message, 'error');
+                    return;
                 }
+                setDokumentasiList((prev) => prev.filter((d) => d.id !== id));
+                showToast('Dokumentasi berhasil dihapus dari database.');
             };
 
-            const handleSaveDokumentasi = (e) => {
+            const handleSaveDokumentasi = async (e) => {
                 e.preventDefault();
-                if (!dokForm.nama_kegiatan || !dokForm.lokasi) {
-                    showToast('Lengkapi Nama Kegiatan dan Lokasi!', 'error');
+                if (!dokForm.nama_kegiatan?.trim() || !dokForm.lokasi?.trim() || !dokForm.tanggal_kegiatan) {
+                    showToast('Lengkapi Nama Kegiatan, Tanggal, dan Lokasi!', 'error');
+                    return;
+                }
+
+                const payload = {
+                    nama_kegiatan: dokForm.nama_kegiatan.trim(),
+                    kategori: dokForm.kategori || 'Kegiatan Sekolah',
+                    tanggal_kegiatan: dokForm.tanggal_kegiatan,
+                    lokasi: dokForm.lokasi.trim(),
+                    penanggung_jawab: dokForm.penanggung_jawab?.trim() || null,
+                    deskripsi: dokForm.deskripsi?.trim() || null,
+                    foto_sampul_url: dokForm.foto_sampul_url?.startsWith('blob:') ? (editingDokumentasi?.foto_sampul_url || null) : (dokForm.foto_sampul_url || editingDokumentasi?.foto_sampul_url || null),
+                    status_publikasi: editingDokumentasi?.status_publikasi || 'Published',
+                    files_count: editingDokumentasi?.files_count || 0
+                };
+
+                let savedRow;
+                let saveError;
+                if (editingDokumentasi) {
+                    const result = await supabaseClient
+                        .from('dokumentasi_kegiatan')
+                        .update(payload)
+                        .eq('id', editingDokumentasi.id)
+                        .select()
+                        .single();
+                    savedRow = result.data;
+                    saveError = result.error;
+                } else {
+                    const result = await supabaseClient
+                        .from('dokumentasi_kegiatan')
+                        .insert(payload)
+                        .select()
+                        .single();
+                    savedRow = result.data;
+                    saveError = result.error;
+                }
+
+                if (saveError) {
+                    console.error('Gagal menyimpan dokumentasi:', saveError.message);
+                    showToast('Dokumentasi gagal disimpan: ' + saveError.message, 'error');
                     return;
                 }
 
                 if (editingDokumentasi) {
-                    const updated = dokumentasiList.map((d) =>
-                        d.id === editingDokumentasi.id
-                            ? {
-                                  ...d,
-                                  ...dokForm,
-                                  foto_sampul_url: dokForm.foto_sampul_url || d.foto_sampul_url,
-                                  files_count: (d.files_count || 1) + uploadedFilesDemo.length
-                              }
-                            : d
-                    );
-                    setDokumentasiList(updated);
-                    showToast('Dokumentasi kegiatan berhasil diperbarui!');
+                    setDokumentasiList((prev) => prev.map((d) => d.id === savedRow.id ? savedRow : d));
+                    showToast('Dokumentasi berhasil diperbarui dan disimpan ke Supabase!');
                 } else {
-                    const newDok = {
-                        id: `DOK-${Date.now().toString().slice(-3)}`,
-                        ...dokForm,
-                        foto_sampul_url:
-                            dokForm.foto_sampul_url ||
-                            'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=600',
-                        status_publikasi: 'Published',
-                        files_count: uploadedFilesDemo.length || 1,
-                        created_at: new Date().toISOString().replace('T', ' ').slice(0, 16)
-                    };
-                    setDokumentasiList([newDok, ...dokumentasiList]);
-                    showToast('Dokumentasi baru berhasil diunggah dan dipublikasikan!');
+                    setDokumentasiList((prev) => [savedRow, ...prev]);
+                    showToast('Dokumentasi berhasil disimpan ke Supabase!');
                 }
 
                 setIsDokumentasiModalOpen(false);
