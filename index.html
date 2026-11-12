@@ -283,7 +283,7 @@
             const [aspirasiList, setAspirasiList] = useState([]);
             const [riwayatList, setRiwayatList] = useState(INITIAL_RIWAYAT_TINDAK_LANJUT);
             const [dokumentasiList, setDokumentasiList] = useState(INITIAL_DOKUMENTASI);
-            const [notulenList, setNotulenList] = useState(INITIAL_NOTULEN);
+            const [notulenList, setNotulenList] = useState([]);
             const [guestbookList, setGuestbookList] = useState(INITIAL_GUESTBOOK);
 
             // Toast System
@@ -378,6 +378,10 @@
                             .from('buku_tamu').select('*').order('date', { ascending: false });
                         if (!guestsError && mounted) setGuestbookList(guests || []);
                         else if (guestsError) console.error('Gagal memuat buku tamu:', guestsError.message);
+                        const { data: minutes, error: minutesError } = await supabaseClient
+                            .from('notulen_rapat').select('*').order('created_at', { ascending: false });
+                        if (!minutesError && mounted) setNotulenList(minutes || []);
+                        else if (minutesError) console.error('Gagal memuat notulen:', minutesError.message);
                     }
                 };
                 restoreSession();
@@ -425,6 +429,10 @@
                     .from('buku_tamu').select('*').order('date', { ascending: false });
                 if (guestsError) console.error('Supabase guestbook load error:', guestsError.message);
                 else setGuestbookList(guests || []);
+                const { data: minutes, error: minutesError } = await supabaseClient
+                    .from('notulen_rapat').select('*').order('created_at', { ascending: false });
+                if (minutesError) console.error('Supabase meeting minutes load error:', minutesError.message);
+                else setNotulenList(minutes || []);
                 setUserProfile((prev) => ({ ...prev, email: data.user?.email || loginForm.email }));
                 setActivePortal('dashboard');
                 showToast('Login admin berhasil. Selamat datang di SchoolHub!');
@@ -771,6 +779,7 @@
                 hasil_pembahasan: '',
                 keputusan_rapat: '',
                 tindak_lanjut: '',
+                transkrip_audio: '',
                 penanggung_jawab: '',
                 tenggat_waktu: ''
             });
@@ -786,26 +795,51 @@
                 return () => clearTimeout(timer);
             }, [notulenForm]);
 
-            const handleSaveNotulen = (e) => {
+            const handleSaveNotulen = async (e) => {
                 e.preventDefault();
                 if (!notulenForm.judul_rapat || !notulenForm.hasil_pembahasan) {
                     showToast('Mohon isi Judul Rapat dan Hasil Pembahasan!', 'error');
                     return;
                 }
 
-                const newNotulen = {
-                    id: `NOT-2026-${Math.floor(100 + Math.random() * 900)}`,
-                    ...notulenForm,
-                    daftar_peserta: Array.isArray(notulenForm.daftar_peserta)
-                        ? notulenForm.daftar_peserta
-                        : notulenForm.daftar_peserta.split(',').map((s) => s.trim()),
+                const nomorNotulen = `NOT-${new Date().getFullYear()}-${Date.now()}`;
+                const peserta = Array.isArray(notulenForm.daftar_peserta)
+                    ? notulenForm.daftar_peserta
+                    : (notulenForm.daftar_peserta || '').split(',').map((s) => s.trim()).filter(Boolean);
+                const payload = {
+                    nomor_notulen: nomorNotulen,
+                    judul_rapat: notulenForm.judul_rapat.trim(),
+                    jenis_rapat: notulenForm.jenis_rapat,
+                    tanggal_rapat: notulenForm.tanggal_rapat,
+                    waktu_mulai: notulenForm.waktu_mulai || null,
+                    waktu_selesai: notulenForm.waktu_selesai || null,
+                    lokasi: notulenForm.lokasi || null,
+                    pimpinan_rapat: notulenForm.pimpinan_rapat || null,
+                    notulis_nama: notulenForm.notulis_nama || null,
+                    daftar_peserta: peserta,
+                    agenda: notulenForm.agenda || null,
+                    hasil_pembahasan: notulenForm.hasil_pembahasan || null,
+                    keputusan_rapat: notulenForm.keputusan_rapat || null,
+                    tindak_lanjut: notulenForm.tindak_lanjut || null,
+                    transkrip_audio: notulenForm.transkrip_audio || null,
+                    penanggung_jawab: notulenForm.penanggung_jawab || null,
+                    tenggat_waktu: notulenForm.tenggat_waktu || null,
                     status_notulen: 'Final',
-                    sync_status: 'Synced'
+                    sync_status: 'Tersimpan'
                 };
 
-                setNotulenList([newNotulen, ...notulenList]);
-                setAutosaveStatus('Tersimpan di Database & Google Sheets');
-                showToast('Notulen berhasil disimpan dan sinkron ke Google Sheets!');
+                const { data, error } = await supabaseClient
+                    .from('notulen_rapat').insert(payload).select().single();
+
+                if (error) {
+                    console.error('Gagal menyimpan notulen:', error.message);
+                    showToast('Notulen gagal disimpan: ' + error.message, 'error');
+                    return;
+                }
+
+                setNotulenList((prev) => [data, ...prev]);
+                setAutosaveStatus('Notulen tersimpan di Supabase');
+                showToast('Notulen dan transkrip berhasil disimpan ke database!');
             };
 
             // --- PROFILE MANAGEMENT STATE ---
