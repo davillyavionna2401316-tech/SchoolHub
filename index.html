@@ -370,6 +370,10 @@
                             .from('aspirasi_laporan').select('*').order('created_at', { ascending: false });
                         if (!rowsError && mounted) setAspirasiList(rows || []);
                         else if (rowsError) console.error('Gagal memuat laporan:', rowsError.message);
+                        const { data: histories, error: historiesError } = await supabaseClient
+                            .from('aspirasi_riwayat').select('*').order('tanggal', { ascending: false });
+                        if (!historiesError && mounted) setRiwayatList(histories || []);
+                        else if (historiesError) console.error('Gagal memuat riwayat aspirasi:', historiesError.message);
                         const { data: guests, error: guestsError } = await supabaseClient
                             .from('buku_tamu').select('*').order('date', { ascending: false });
                         if (!guestsError && mounted) setGuestbookList(guests || []);
@@ -413,6 +417,10 @@
                 } else {
                     setAspirasiList(rows || []);
                 }
+                const { data: histories, error: historiesError } = await supabaseClient
+                    .from('aspirasi_riwayat').select('*').order('tanggal', { ascending: false });
+                if (historiesError) console.error('Supabase aspiration history load error:', historiesError.message);
+                else setRiwayatList(histories || []);
                 const { data: guests, error: guestsError } = await supabaseClient
                     .from('buku_tamu').select('*').order('date', { ascending: false });
                 if (guestsError) console.error('Supabase guestbook load error:', guestsError.message);
