@@ -452,14 +452,18 @@
                     status: 'Menunggu Verifikasi',
                     receiver: 'Petugas Front Desk'
                 };
-                const { data, error } = await supabaseClient
-                    .from('buku_tamu').insert(payload).select().single();
+                const { error } = await supabaseClient
+                    .from('buku_tamu').insert(payload);
                 if (error) {
-                    console.error('Gagal menyimpan buku tamu:', error.message);
-                    showToast('Buku tamu belum tersimpan. Periksa tabel dan kebijakan Supabase.', 'error');
+                    console.error('Gagal menyimpan buku tamu:', error);
+                    showToast('Buku tamu belum tersimpan: ' + (error.message || 'Periksa koneksi dan kebijakan Supabase.'), 'error');
                     return;
                 }
-                setGuestbookList((prev) => [data, ...prev]);
+                const savedEntry = {
+                    ...payload,
+                    date: new Date().toISOString()
+                };
+                setGuestbookList((prev) => [savedEntry, ...prev]);
                 setGbForm({ name: '', agency: '', purpose: '' });
                 showToast('Terima kasih! Data kunjungan berhasil disimpan.');
             };
