@@ -453,6 +453,22 @@
                     console.error('Supabase login error:', error.message);
                     return;
                 }
+                const { data: savedProfile, error: profileLoadError } = await supabaseClient
+                    .from('profil_admin').select('*').eq('user_id', data.user.id).maybeSingle();
+                if (profileLoadError) {
+                    console.error('Gagal memuat profil admin:', profileLoadError.message);
+                } else if (savedProfile) {
+                    const restoredProfile = {
+                        name: savedProfile.nama_lengkap || 'Administrator SchoolHub',
+                        username: 'admin',
+                        email: data.user.email || savedProfile.email || '',
+                        role: savedProfile.jabatan || 'Administrator & Tim IT',
+                        unit: savedProfile.unit_kerja || 'Sub Bagian Tata Usaha & IT',
+                        avatar: savedProfile.foto_profil_url || ''
+                    };
+                    setUserProfile(restoredProfile);
+                    setProfileForm((prev) => ({ ...prev, ...restoredProfile, oldPass: '', newPass: '', confirmPass: '' }));
+                }
                 const { data: rows, error: rowsError } = await supabaseClient
                     .from('aspirasi_laporan').select('*').order('created_at', { ascending: false });
                 if (rowsError) {
