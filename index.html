@@ -383,6 +383,11 @@
                     if (data?.session?.user) {
                         setIsLoggedIn(true);
                         setUserProfile((prev) => ({ ...prev, email: data.session.user.email || prev.email }));
+                        const { data: savedProfile, error: profileLoadError } = await supabaseClient.from('profil_admin').select('*').eq('user_id', data.session.user.id).maybeSingle();
+                        if (!profileLoadError && savedProfile) {
+                            const restored = { name: savedProfile.nama_lengkap || 'Administrator SchoolHub', username: 'admin', email: data.session.user.email || savedProfile.email || '', role: savedProfile.jabatan || 'Administrator & Tim IT', unit: savedProfile.unit_kerja || 'Sub Bagian Tata Usaha & IT', avatar: savedProfile.foto_profil_url || '' };
+                            if (mounted) { setUserProfile(restored); setProfileForm((prev) => ({ ...prev, ...restored })); }
+                        }
                         const { data: rows, error: rowsError } = await supabaseClient
                             .from('aspirasi_laporan').select('*').order('created_at', { ascending: false });
                         if (!rowsError && mounted) setAspirasiList(rows || []);
@@ -1029,23 +1034,30 @@
             };
 
             // --- PROFILE MANAGEMENT STATE ---
+            const [profilePhotoFile, setProfilePhotoFile] = useState(null);
             const [profileForm, setProfileForm] = useState({ ...userProfile, oldPass: '', newPass: '', confirmPass: '' });
-            const handleProfileSubmit = (e) => {
+            const handleProfileSubmit = async (e) => {
                 e.preventDefault();
                 if (profileForm.newPass && profileForm.newPass !== profileForm.confirmPass) {
-                    showToast('Konfirmasi kata sandi baru tidak cocok!', 'error');
-                    return;
+                    showToast('Konfirmasi kata sandi baru tidak cocok!', 'error'); return;
                 }
-                setUserProfile({
-                    ...userProfile,
-                    name: profileForm.name,
-                    username: profileForm.username,
-                    email: profileForm.email,
-                    role: profileForm.role,
-                    unit: profileForm.unit,
-                    avatar: profileForm.avatar
-                });
-                showToast('Profil pengguna berhasil diperbarui!');
+                const { data: authData } = await supabaseClient.auth.getUser();
+                const currentUser = authData?.user;
+                if (!currentUser) { showToast('Sesi admin tidak ditemukan. Silakan login ulang.', 'error'); return; }
+                let avatarUrl = profileForm.avatar || userProfile.avatar;
+                if (profilePhotoFile) {
+                    const ext = (profilePhotoFile.name.split('.').pop() || 'jpg').toLowerCase();
+                    const path = currentUser.id + '/avatar-' + Date.now() + '.' + ext;
+                    const { data: uploaded, error: uploadError } = await supabaseClient.storage.from('profil-admin').upload(path, profilePhotoFile, { upsert: true, contentType: profilePhotoFile.type, cacheControl: '3600' });
+                    if (uploadError) { showToast('Foto profil gagal diunggah: ' + uploadError.message, 'error'); return; }
+                    avatarUrl = supabaseClient.storage.from('profil-admin').getPublicUrl(uploaded.path).data.publicUrl;
+                }
+                const payload = { user_id: currentUser.id, nama_lengkap: profileForm.name, email: currentUser.email || profileForm.email, jabatan: profileForm.role, unit_kerja: profileForm.unit, foto_profil_url: avatarUrl, updated_at: new Date().toISOString() };
+                const { error } = await supabaseClient.from('profil_admin').upsert(payload, { onConflict: 'user_id' });
+                if (error) { showToast('Profil gagal disimpan: ' + error.message, 'error'); return; }
+                const updated = { ...userProfile, name: profileForm.name, username: profileForm.username, email: currentUser.email || profileForm.email, role: profileForm.role, unit: profileForm.unit, avatar: avatarUrl };
+                setUserProfile(updated); setProfileForm((prev) => ({ ...prev, ...updated, oldPass: '', newPass: '', confirmPass: '' })); setProfilePhotoFile(null);
+                showToast('Profil admin berhasil disimpan.');
             };
 
             const handleVerifyGuest = (id) => {
@@ -1083,8 +1095,8 @@
                     <header className="bg-slate-900 text-white sticky top-0 z-40 shadow-md border-b border-slate-800">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                             <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setActivePortal('public'); setActivePublicTab('home'); }}>
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-lg">
-                                    <Icon name="building-2" className="w-6 h-6" />
+                                <div className="w-12 h-12 rounded-xl bg-white p-0.5 flex items-center justify-center shadow-lg overflow-hidden">
+                                    <img src="data:image/webp;base64,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" alt="Logo SMPN 28 Malang" className="w-full h-full object-contain" />
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
@@ -2305,6 +2317,17 @@
                                                     </div>
                                                 </div>
 
+                                                <div className="flex flex-col sm:flex-row items-center gap-4">
+                                                    <img src={profilePhotoFile ? URL.createObjectURL(profilePhotoFile) : (profileForm.avatar || userProfile.avatar)} alt="Pratinjau foto profil" className="w-24 h-24 rounded-full object-cover border-2 border-cyan-500 bg-slate-100" />
+                                                    <div className="flex-1 w-full">
+                                                        <label className="block font-semibold text-slate-700 mb-1">Foto Profil (JPG, PNG, WEBP maks. 5 MB)</label>
+                                                        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e)=>{const f=e.target.files?.[0];if(!f)return;if(f.size>5*1024*1024){showToast('Ukuran foto maksimal 5 MB.','error');e.target.value='';return;}setProfilePhotoFile(f);}} className="w-full text-xs" />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div><label className="block font-semibold text-slate-700 mb-1">Jabatan</label><input value={profileForm.role || ''} onChange={(e)=>setProfileForm({...profileForm,role:e.target.value})} className="w-full px-3 py-2 rounded-xl border border-slate-300" /></div>
+                                                    <div><label className="block font-semibold text-slate-700 mb-1">Unit Kerja</label><input value={profileForm.unit || ''} onChange={(e)=>setProfileForm({...profileForm,unit:e.target.value})} className="w-full px-3 py-2 rounded-xl border border-slate-300" /></div>
+                                                </div>
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block font-semibold text-slate-700 mb-1">Nama Lengkap</label>
