@@ -903,7 +903,7 @@
                     addSection('E. Penanggung Jawab', item.penanggung_jawab);
                     addSection('F. Tenggat Waktu', item.tenggat_waktu);
                     if (String(item.transkrip_audio || '').trim()) addSection('G. Transkrip Audio', item.transkrip_audio);
-                    children.push(new Paragraph({ text: 'Dokumen dibuat melalui SchoolHub — SMP Negeri 28 Malang', alignment: AlignmentType.CENTER, spacing: { before: 400 }, children: [new TextRun({ text: 'Dokumen dibuat melalui SchoolHub — SMP Negeri 28 Malang', italics: true, color: '64748B', size: 18 })] }));
+                    children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 400 }, children: [new TextRun({ text: 'Dokumen dibuat melalui SchoolHub — SMP Negeri 28 Malang', italics: true, color: '64748B', size: 18 })] }));
                     const documentFile = new Document({
                         creator: 'SchoolHub — SMP Negeri 28 Malang',
                         title: 'Notulen Rapat - ' + title,
