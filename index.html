@@ -586,7 +586,7 @@
                 setIsFollowUpModalOpen(true);
             };
 
-            const handleSaveFollowUp = (e) => {
+            const handleSaveFollowUp = async (e) => {
                 e.preventDefault();
                 if (!selectedTicketDetail) return;
 
@@ -597,52 +597,74 @@
                     }
                 }
 
-                if (followUpForm.new_status === 'Tidak Dapat Ditindaklanjuti') {
-                    if (!followUpForm.alasan_penolakan) {
-                        showToast('Untuk status TIDAK DAPAT DITINDAKLANJUTI, wajib mengisi Alasan Penolakan!', 'error');
-                        return;
-                    }
+                if (followUpForm.new_status === 'Tidak Dapat Ditindaklanjuti' && !followUpForm.alasan_penolakan) {
+                    showToast('Untuk status TIDAK DAPAT DITINDAKLANJUTI, wajib mengisi Alasan Penolakan!', 'error');
+                    return;
                 }
 
-                const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
+                const nowISO = new Date().toISOString();
+                const updatedFields = {
+                    petugas_pj: followUpForm.petugas_pj,
+                    prioritas: followUpForm.prioritas,
+                    status: followUpForm.new_status,
+                    tanggal_target_selesai: followUpForm.target_selesai || null,
+                    tanggal_penyelesaian: followUpForm.new_status === 'Selesai'
+                        ? nowISO.slice(0, 10)
+                        : (selectedTicketDetail.tanggal_penyelesaian || null),
+                    ringkasan_hasil: followUpForm.ringkasan_hasil || null,
+                    tindakan_akhir: followUpForm.tindakan_akhir || null,
+                    catatan_penyelesaian: followUpForm.catatan_penyelesaian || null,
+                    alasan_penolakan: followUpForm.alasan_penolakan || null,
+                    updated_at: nowISO
+                };
 
-                const updatedAspirasi = aspirasiList.map((item) => {
-                    if (item.id === selectedTicketDetail.id) {
-                        return {
-                            ...item,
-                            petugas_pj: followUpForm.petugas_pj,
-                            prioritas: followUpForm.prioritas,
-                            status: followUpForm.new_status,
-                            tanggal_target_selesai: followUpForm.target_selesai,
-                            tanggal_penyelesaian: followUpForm.new_status === 'Selesai' ? nowStr.slice(0, 10) : item.tanggal_penyelesaian,
-                            ringkasan_hasil: followUpForm.ringkasan_hasil,
-                            tindakan_akhir: followUpForm.tindakan_akhir,
-                            catatan_penyelesaian: followUpForm.catatan_penyelesaian,
-                            alasan_penolakan: followUpForm.alasan_penolakan,
-                            updated_at: nowStr
-                        };
-                    }
-                    return item;
-                });
+                const { error: updateError } = await supabaseClient
+                    .from('aspirasi_laporan')
+                    .update(updatedFields)
+                    .eq('id', selectedTicketDetail.id);
 
-                const newHistoryItem = {
-                    id: `R-${Date.now()}`,
+                if (updateError) {
+                    console.error('Gagal memperbarui laporan:', updateError);
+                    showToast('Perubahan laporan gagal disimpan: ' + updateError.message, 'error');
+                    return;
+                }
+
+                const historyPayload = {
                     aspirasi_id: selectedTicketDetail.id,
-                    tanggal: nowStr,
-                    petugas: userProfile.name,
+                    tanggal: nowISO,
+                    petugas: userProfile.name || 'Admin',
                     jenis_tindakan: followUpForm.jenis_tindakan,
                     uraian: followUpForm.uraian_tindakan || `Pembaruan status menjadi ${followUpForm.new_status}`,
-                    hasil_sementara: followUpForm.hasil_sementara || '-',
-                    kendala: followUpForm.kendala || '-',
-                    rencana_berikutnya: followUpForm.rencana_berikutnya || '-',
+                    hasil_sementara: followUpForm.hasil_sementara || null,
+                    kendala: followUpForm.kendala || null,
+                    rencana_berikutnya: followUpForm.rencana_berikutnya || null,
                     status_pada_saat_ini: followUpForm.new_status,
                     tampilkan_ke_publik: followUpForm.tampilkan_ke_publik
                 };
 
+                const { error: historyError } = await supabaseClient
+                    .from('aspirasi_riwayat')
+                    .insert(historyPayload);
+
+                const updatedAspirasi = aspirasiList.map((item) =>
+                    item.id === selectedTicketDetail.id ? { ...item, ...updatedFields } : item
+                );
                 setAspirasiList(updatedAspirasi);
-                setRiwayatList([newHistoryItem, ...riwayatList]);
+                setSelectedTicketDetail((prev) => prev ? { ...prev, ...updatedFields } : prev);
+
+                if (historyError) {
+                    console.error('Gagal menyimpan riwayat tindak lanjut:', historyError);
+                    showToast('Status laporan tersimpan, tetapi riwayat gagal disimpan: ' + historyError.message, 'error');
+                    return;
+                }
+
+                const newHistoryItem = {
+                    ...historyPayload,
+                    id: `R-${Date.now()}`
+                };
+                setRiwayatList((prev) => [newHistoryItem, ...prev]);
                 setIsFollowUpModalOpen(false);
-                showToast('Tindak lanjut & pembaruan status berhasil disimpan ke database!');
+                showToast('Tindak lanjut dan riwayat berhasil disimpan ke database!');
             };
 
             // --- DOKUMENTASI UPLOAD & EDIT FORM STATES ---
