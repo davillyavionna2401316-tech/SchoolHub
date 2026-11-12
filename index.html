@@ -13,6 +13,8 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Supabase client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- DOCX export for individual meeting minutes -->
+    <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Custom Inter Font -->
@@ -865,49 +867,67 @@
                 showToast('Mode edit aktif. Silakan perbarui data notulen.', 'info');
             };
 
-            const handleExportNotulenCSV = () => {
-                const keyword = notulenSearch.trim().toLowerCase();
-                const rows = notulenList.filter((n) =>
-                    [n.nomor_notulen, n.id, n.judul_rapat, n.jenis_rapat, n.notulis_nama]
-                        .some((v) => String(v || '').toLowerCase().includes(keyword))
-                );
-                if (rows.length === 0) {
-                    showToast('Tidak ada data notulen untuk diunduh.', 'error');
+            const handleExportNotulenWord = async (item) => {
+                if (!window.docx) {
+                    showToast('Fitur Word belum siap. Muat ulang halaman dan coba kembali.', 'error');
                     return;
                 }
-                const columns = [
-                    ['Nomor Notulen', 'nomor_notulen'], ['Judul Rapat', 'judul_rapat'],
-                    ['Jenis Rapat', 'jenis_rapat'], ['Tanggal Rapat', 'tanggal_rapat'],
-                    ['Waktu Mulai', 'waktu_mulai'], ['Waktu Selesai', 'waktu_selesai'],
-                    ['Lokasi', 'lokasi'], ['Pimpinan Rapat', 'pimpinan_rapat'],
-                    ['Notulis', 'notulis_nama'], ['Daftar Peserta', 'daftar_peserta'],
-                    ['Agenda', 'agenda'], ['Hasil Pembahasan', 'hasil_pembahasan'],
-                    ['Keputusan Rapat', 'keputusan_rapat'], ['Tindak Lanjut', 'tindak_lanjut'],
-                    ['Penanggung Jawab', 'penanggung_jawab'], ['Tenggat Waktu', 'tenggat_waktu'],
-                    ['Transkrip Audio', 'transkrip_audio']
-                ];
-                const escapeCSV = (value) => {
-                    let textValue = Array.isArray(value) ? value.join('; ') : String(value ?? '');
-                    if (/^[=+@-]/.test(textValue)) textValue = "'" + textValue;
-                    return '"' + textValue.replace(/"/g, '""') + '"';
-                };
-                const csv = [
-                    columns.map(([label]) => escapeCSV(label)).join(','),
-                    ...rows.map((row) => columns.map(([, key]) => escapeCSV(row[key])).join(','))
-                ].join('\r\n');
-                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'arsip-notulen-rapat-' + new Date().toISOString().slice(0, 10) + '.csv';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-                showToast(rows.length + ' data notulen berhasil disiapkan untuk diunduh.');
+                try {
+                    const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = window.docx;
+                    const safe = (value) => {
+                        if (Array.isArray(value)) return value.length ? value.join(', ') : '-';
+                        const result = String(value ?? '').trim();
+                        return result || '-';
+                    };
+                    const title = safe(item.judul_rapat);
+                    const children = [
+                        new Paragraph({ text: 'NOTULEN RAPAT', heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER, spacing: { after: 160 } }),
+                        new Paragraph({ children: [new TextRun({ text: title, bold: true, size: 28 })], alignment: AlignmentType.CENTER, spacing: { after: 260 } }),
+                        new Paragraph({ children: [new TextRun({ text: 'Nomor Notulen: ', bold: true }), new TextRun(safe(item.nomor_notulen || item.id))], spacing: { after: 100 } }),
+                        new Paragraph({ children: [new TextRun({ text: 'Jenis Rapat: ', bold: true }), new TextRun(safe(item.jenis_rapat))], spacing: { after: 100 } }),
+                        new Paragraph({ children: [new TextRun({ text: 'Tanggal: ', bold: true }), new TextRun(safe(item.tanggal_rapat))], spacing: { after: 100 } }),
+                        new Paragraph({ children: [new TextRun({ text: 'Waktu: ', bold: true }), new TextRun(safe(item.waktu_mulai) + ' - ' + safe(item.waktu_selesai))], spacing: { after: 100 } }),
+                        new Paragraph({ children: [new TextRun({ text: 'Lokasi: ', bold: true }), new TextRun(safe(item.lokasi))], spacing: { after: 100 } }),
+                        new Paragraph({ children: [new TextRun({ text: 'Pimpinan Rapat: ', bold: true }), new TextRun(safe(item.pimpinan_rapat))], spacing: { after: 100 } }),
+                        new Paragraph({ children: [new TextRun({ text: 'Notulis: ', bold: true }), new TextRun(safe(item.notulis_nama))], spacing: { after: 100 } }),
+                        new Paragraph({ children: [new TextRun({ text: 'Daftar Peserta: ', bold: true }), new TextRun(safe(item.daftar_peserta))], spacing: { after: 220 } })
+                    ];
+                    const addSection = (heading, value) => {
+                        children.push(new Paragraph({ text: heading, heading: HeadingLevel.HEADING_2, spacing: { before: 180, after: 80 } }));
+                        children.push(new Paragraph({ text: safe(value), spacing: { after: 140 } }));
+                    };
+                    addSection('A. Agenda Rapat', item.agenda);
+                    addSection('B. Hasil Pembahasan', item.hasil_pembahasan);
+                    addSection('C. Keputusan Rapat', item.keputusan_rapat);
+                    addSection('D. Tindak Lanjut', item.tindak_lanjut);
+                    addSection('E. Penanggung Jawab', item.penanggung_jawab);
+                    addSection('F. Tenggat Waktu', item.tenggat_waktu);
+                    if (String(item.transkrip_audio || '').trim()) addSection('G. Transkrip Audio', item.transkrip_audio);
+                    children.push(new Paragraph({ text: 'Dokumen dibuat melalui SchoolHub — SMP Negeri 28 Malang', alignment: AlignmentType.CENTER, spacing: { before: 400 }, children: [new TextRun({ text: 'Dokumen dibuat melalui SchoolHub — SMP Negeri 28 Malang', italics: true, color: '64748B', size: 18 })] }));
+                    const documentFile = new Document({
+                        creator: 'SchoolHub — SMP Negeri 28 Malang',
+                        title: 'Notulen Rapat - ' + title,
+                        description: 'Dokumen notulen rapat individual',
+                        sections: [{ properties: {}, children }]
+                    });
+                    const blob = await Packer.toBlob(documentFile);
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    const filename = title.replace(/[^a-z0-9\\-_ ]/gi, '').trim().replace(/\\s+/g, '-').slice(0, 60) || 'notulen-rapat';
+                    link.href = url;
+                    link.download = 'Notulen-' + filename + '.docx';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    showToast('Dokumen Word untuk rapat ini berhasil dibuat.');
+                } catch (error) {
+                    console.error('Export Word error:', error);
+                    showToast('Dokumen Word gagal dibuat. Silakan coba kembali.', 'error');
+                }
             };
 
-            const handleDeleteNotulen = async (item) => {
+                        const handleDeleteNotulen = async (item) => {
                 if (!window.confirm('Yakin ingin menghapus notulen "' + item.judul_rapat + '"? Data yang dihapus tidak dapat dikembalikan.')) return;
                 const { error } = await supabaseClient.from('notulen_rapat').delete().eq('id', item.id);
                 if (error) { showToast('Notulen gagal dihapus: ' + error.message, 'error'); return; }
@@ -2073,9 +2093,7 @@
                                                 </div>
                                                 <div className="flex items-center gap-3 flex-wrap">
                                                     <span className="text-xs text-slate-500">{notulenList.filter((n) => [n.nomor_notulen, n.id, n.judul_rapat, n.jenis_rapat, n.notulis_nama].some((v) => String(v || '').toLowerCase().includes(notulenSearch.trim().toLowerCase()))).length} hasil ditemukan</span>
-                                                    <button type="button" onClick={handleExportNotulenCSV} className="px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2">
-                                                        <Icon name="download" className="w-4 h-4" /> Unduh CSV
-                                                    </button>
+                                                    <span className="text-xs text-slate-400">Unduh dokumen melalui tombol pada setiap rapat</span>
                                                 </div>
                                             </div>
                                             <table className="w-full text-left text-xs text-slate-600">
@@ -2099,6 +2117,7 @@
                                                                 <div className="flex flex-wrap gap-1.5">
                                                                     <button type="button" onClick={() => setSelectedNotulenDetail(n)} className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold rounded-lg text-[11px] flex items-center gap-1"><Icon name="eye" className="w-3.5 h-3.5" /> Detail</button>
                                                                     <button type="button" onClick={() => handleEditNotulen(n)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-[11px] flex items-center gap-1"><Icon name="edit" className="w-3.5 h-3.5" /> Edit</button>
+                                                                    <button type="button" onClick={() => handleExportNotulenWord(n)} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] flex items-center gap-1"><Icon name="file-text" className="w-3.5 h-3.5" /> Unduh Word</button>
                                                                     <button type="button" onClick={() => handleDeleteNotulen(n)} className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-[11px] flex items-center gap-1"><Icon name="trash-2" className="w-3.5 h-3.5" /> Hapus</button>
                                                                 </div>
                                                             </td>
