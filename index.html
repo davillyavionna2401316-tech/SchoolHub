@@ -502,16 +502,16 @@
                     prioritas: 'Sedang',
                     status: 'Diterima'
                 };
-                const { data, error } = await supabaseClient
-                    .from('aspirasi_laporan').insert(payload).select().single();
+                const { error } = await supabaseClient
+                    .from('aspirasi_laporan').insert(payload);
                 if (error) {
-                    console.error('Gagal menyimpan aspirasi:', error.message);
-                    showToast('Aspirasi gagal disimpan. Periksa koneksi dan kebijakan Supabase.', 'error');
+                    console.error('Gagal menyimpan aspirasi:', error);
+                    showToast('Aspirasi gagal disimpan: ' + (error.message || 'Periksa koneksi dan kebijakan Supabase.'), 'error');
                     return;
                 }
-                setAspirasiList((prev) => [data, ...prev]);
+                setAspirasiList((prev) => [{ ...payload, created_at: new Date().toISOString() }, ...prev]);
                 setSubmittedTicketResult({
-                    ticketNo: data.nomor_tiket,
+                    ticketNo: payload.nomor_tiket,
                     accessCode: accessCode,
                     email: publicForm.email
                 });
