@@ -1854,15 +1854,13 @@
                                                     </div>
                                                     <div>
                                                         <label className="block font-semibold text-slate-700 mb-1">Jenis Rapat</label>
-                                                        <select
+                                                        <input
+                                                            type="text"
                                                             value={notulenForm.jenis_rapat}
                                                             onChange={(e) => setNotulenForm({ ...notulenForm, jenis_rapat: e.target.value })}
+                                                            placeholder="Ketik jenis rapat, misalnya Rapat Dinas"
                                                             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
-                                                        >
-                                                            <option value="Rapat Dinas">Rapat Dinas</option>
-                                                            <option value="Rapat Komite">Rapat Komite</option>
-                                                            <option value="Rapat Kurikulum">Rapat Kurikulum</option>
-                                                        </select>
+                                                        />
                                                     </div>
                                                 </div>
 
