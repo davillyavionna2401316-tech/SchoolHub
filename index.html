@@ -1866,6 +1866,16 @@
                                                     </div>
                                                 </div>
 
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div><label className="block font-semibold text-slate-700 mb-1">Tanggal Rapat</label><input type="date" value={notulenForm.tanggal_rapat} onChange={(e) => setNotulenForm({ ...notulenForm, tanggal_rapat: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" /></div>
+                                                    <div><label className="block font-semibold text-slate-700 mb-1">Lokasi Rapat</label><input type="text" value={notulenForm.lokasi} onChange={(e) => setNotulenForm({ ...notulenForm, lokasi: e.target.value })} placeholder="Lokasi rapat" className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" /></div>
+                                                    <div><label className="block font-semibold text-slate-700 mb-1">Waktu Mulai</label><input type="time" value={notulenForm.waktu_mulai} onChange={(e) => setNotulenForm({ ...notulenForm, waktu_mulai: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" /></div>
+                                                    <div><label className="block font-semibold text-slate-700 mb-1">Waktu Selesai</label><input type="time" value={notulenForm.waktu_selesai} onChange={(e) => setNotulenForm({ ...notulenForm, waktu_selesai: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" /></div>
+                                                    <div><label className="block font-semibold text-slate-700 mb-1">Pimpinan Rapat</label><input type="text" value={notulenForm.pimpinan_rapat} onChange={(e) => setNotulenForm({ ...notulenForm, pimpinan_rapat: e.target.value })} placeholder="Nama pimpinan rapat" className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" /></div>
+                                                    <div><label className="block font-semibold text-slate-700 mb-1">Nama Notulis</label><input type="text" value={notulenForm.notulis_nama} onChange={(e) => setNotulenForm({ ...notulenForm, notulis_nama: e.target.value })} placeholder="Nama notulis" className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" /></div>
+                                                    <div className="sm:col-span-2"><label className="block font-semibold text-slate-700 mb-1">Daftar Peserta Rapat</label><textarea rows={2} value={notulenForm.daftar_peserta} onChange={(e) => setNotulenForm({ ...notulenForm, daftar_peserta: e.target.value })} placeholder="Pisahkan nama peserta dengan koma" className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm"></textarea></div>
+                                                </div>
+                                                <div><label className="block font-semibold text-slate-700 mb-1">Agenda Rapat</label><textarea rows={3} value={notulenForm.agenda} onChange={(e) => setNotulenForm({ ...notulenForm, agenda: e.target.value })} placeholder="Tuliskan agenda rapat" className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm"></textarea></div>
                                                 <div>
                                                     <label className="block font-semibold text-slate-700 mb-1">Hasil Pembahasan & Catatan Rapat *</label>
                                                     <textarea
@@ -1878,6 +1888,12 @@
                                                     ></textarea>
                                                 </div>
 
+                                                <div><label className="block font-semibold text-slate-700 mb-1">Keputusan Rapat</label><textarea rows={3} value={notulenForm.keputusan_rapat} onChange={(e) => setNotulenForm({ ...notulenForm, keputusan_rapat: e.target.value })} placeholder="Tuliskan keputusan rapat" className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm"></textarea></div>
+                                                <div><label className="block font-semibold text-slate-700 mb-1">Tindak Lanjut</label><textarea rows={3} value={notulenForm.tindak_lanjut} onChange={(e) => setNotulenForm({ ...notulenForm, tindak_lanjut: e.target.value })} placeholder="Tuliskan tindak lanjut rapat" className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm"></textarea></div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div><label className="block font-semibold text-slate-700 mb-1">Penanggung Jawab</label><input type="text" value={notulenForm.penanggung_jawab} onChange={(e) => setNotulenForm({ ...notulenForm, penanggung_jawab: e.target.value })} placeholder="Nama penanggung jawab" className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" /></div>
+                                                    <div><label className="block font-semibold text-slate-700 mb-1">Tenggat Waktu</label><input type="date" value={notulenForm.tenggat_waktu} onChange={(e) => setNotulenForm({ ...notulenForm, tenggat_waktu: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" /></div>
+                                                </div>
                                                 <button
                                                     type="submit"
                                                     className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold text-sm rounded-xl shadow flex items-center gap-2"
