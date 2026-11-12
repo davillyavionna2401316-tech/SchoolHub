@@ -287,6 +287,9 @@
             const [aspirasiList, setAspirasiList] = useState([]);
             const [riwayatList, setRiwayatList] = useState(INITIAL_RIWAYAT_TINDAK_LANJUT);
             const [dokumentasiList, setDokumentasiList] = useState([]);
+            const [pengumumanList, setPengumumanList] = useState([]);
+            const [pengumumanForm, setPengumumanForm] = useState({ judul: '', kategori: 'Umum', isi: '', status_publikasi: 'Draft' });
+            const [editingPengumuman, setEditingPengumuman] = useState(null);
             const [notulenList, setNotulenList] = useState([]);
             const [guestbookList, setGuestbookList] = useState(INITIAL_GUESTBOOK);
 
@@ -369,6 +372,9 @@
                         .eq('status_publikasi', 'Published')
                         .order('tanggal_kegiatan', { ascending: false });
                     if (!publicDocsError && mounted) setDokumentasiList(publicDocs || []);
+                    const { data: announcements, error: announcementsError } = await supabaseClient.from('pengumuman_sekolah').select('*').eq('status_publikasi', 'Published').order('tanggal_publikasi', { ascending: false });
+                    if (!announcementsError && mounted) setPengumumanList(announcements || []);
+                    else if (announcementsError) console.error('Gagal memuat pengumuman:', announcementsError.message);
                     else if (publicDocsError) console.error('Gagal memuat dokumentasi publik:', publicDocsError.message);
 
                     const { data, error } = await supabaseClient.auth.getSession();
@@ -393,6 +399,9 @@
                             .from('dokumentasi_kegiatan').select('*').order('tanggal_kegiatan', { ascending: false });
                         if (!docsError && mounted) setDokumentasiList(docs || []);
                         else if (docsError) console.error('Gagal memuat dokumentasi:', docsError.message);
+                        const { data: allAnnouncements, error: allAnnouncementsError } = await supabaseClient.from('pengumuman_sekolah').select('*').order('tanggal_publikasi', { ascending: false });
+                        if (!allAnnouncementsError && mounted) setPengumumanList(allAnnouncements || []);
+                        else if (allAnnouncementsError) console.error('Gagal memuat pengumuman admin:', allAnnouncementsError.message);
                         const { data: minutes, error: minutesError } = await supabaseClient
                             .from('notulen_rapat').select('*').order('created_at', { ascending: false });
                         if (!minutesError && mounted) setNotulenList(minutes || []);
@@ -1145,6 +1154,7 @@
                                         { id: 'home', label: 'Beranda', icon: 'building-2' },
                                         { id: 'buku-tamu', label: 'Buku Tamu Digital', icon: 'user-check' },
                                         { id: 'dokumentasi', label: 'Galeri Kegiatan', icon: 'image' },
+                                        { id: 'pengumuman', label: 'Pengumuman', icon: 'megaphone' },
                                         { id: 'pengaduan', label: 'Kirim Aspirasi', icon: 'message-square' },
                                         { id: 'lacak', label: 'Lacak Status Tiket', icon: 'search' },
                                         { id: 'kontak', label: 'Kontak & Lokasi Peta', icon: 'map-pin' }
@@ -1364,6 +1374,30 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB PENGUMUMAN SEKOLAH */}
+                            {activePublicTab === 'pengumuman' && (
+                                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
+                                    <div className="mb-8">
+                                        <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2"><Icon name="megaphone" className="w-6 h-6 text-cyan-600" /> Pengumuman Sekolah</h2>
+                                        <p className="text-slate-600 text-sm">Informasi dan pemberitahuan resmi SMP Negeri 28 Malang.</p>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {pengumumanList.length === 0 ? (
+                                            <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-500">Belum ada pengumuman yang diterbitkan.</div>
+                                        ) : pengumumanList.filter((item) => item.status_publikasi === 'Published').map((item) => (
+                                            <article key={item.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                                                <div className="flex flex-wrap items-center gap-2 mb-3">
+                                                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-700">{item.kategori}</span>
+                                                    <span className="text-xs text-slate-500">{item.tanggal_publikasi ? new Date(item.tanggal_publikasi).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}) : ''}</span>
+                                                </div>
+                                                <h3 className="text-lg font-bold text-slate-900 mb-2">{item.judul}</h3>
+                                                <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{item.isi}</p>
+                                            </article>
                                         ))}
                                     </div>
                                 </div>
@@ -1778,7 +1812,8 @@
                                                     { id: 'buku-tamu-dash', label: 'Buku Tamu Kelola', icon: 'user-check' },
                                                     { id: 'dokumentasi-dash', label: 'Kelola Dokumentasi', icon: 'image' },
                                                     { id: 'notulen-dash', label: 'Notulen & Transkrip', icon: 'file-text' },
-                                                    { id: 'aspirasi-dash', label: 'Aspirasi & Pengaduan', icon: 'message-square' }
+                                                    { id: 'aspirasi-dash', label: 'Aspirasi & Pengaduan', icon: 'message-square' },
+                                                    { id: 'pengumuman-dash', label: 'Kelola Pengumuman', icon: 'megaphone' }
                                                 ].map((m) => (
                                                     <button
                                                         key={m.id}
@@ -2114,6 +2149,45 @@
                                                     </table>
                                                 </div>
                                             )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* MENU: KELOLA PENGUMUMAN */}
+                                {activeDashboardMenu === 'pengumuman-dash' && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h2 className="text-2xl font-black text-slate-900">Kelola Pengumuman Sekolah</h2>
+                                            <p className="text-xs text-slate-500">Buat, ubah, hapus, dan terbitkan informasi untuk pengunjung website.</p>
+                                        </div>
+                                        <form onSubmit={async (e) => {
+                                            e.preventDefault();
+                                            const payload = { judul: pengumumanForm.judul.trim(), kategori: pengumumanForm.kategori, isi: pengumumanForm.isi.trim(), status_publikasi: pengumumanForm.status_publikasi, tanggal_publikasi: new Date().toISOString(), updated_at: new Date().toISOString() };
+                                            const result = editingPengumuman
+                                                ? await supabaseClient.from('pengumuman_sekolah').update(payload).eq('id', editingPengumuman.id).select().single()
+                                                : await supabaseClient.from('pengumuman_sekolah').insert(payload).select().single();
+                                            if (result.error) { showToast('Pengumuman gagal disimpan: ' + result.error.message, 'error'); return; }
+                                            setPengumumanList((prev) => editingPengumuman ? prev.map((x) => x.id === result.data.id ? result.data : x) : [result.data, ...prev]);
+                                            setPengumumanForm({ judul: '', kategori: 'Umum', isi: '', status_publikasi: 'Draft' }); setEditingPengumuman(null);
+                                            showToast('Pengumuman berhasil disimpan!');
+                                        }} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+                                            <h3 className="font-bold text-slate-900">{editingPengumuman ? 'Edit Pengumuman' : 'Buat Pengumuman Baru'}</h3>
+                                            <div><label className="block text-xs font-semibold text-slate-700 mb-1">Judul Pengumuman *</label><input required value={pengumumanForm.judul} onChange={(e)=>setPengumumanForm({...pengumumanForm,judul:e.target.value})} className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm" placeholder="Masukkan judul pengumuman" /></div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div><label className="block text-xs font-semibold text-slate-700 mb-1">Kategori</label><select value={pengumumanForm.kategori} onChange={(e)=>setPengumumanForm({...pengumumanForm,kategori:e.target.value})} className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm"><option>Umum</option><option>Akademik</option><option>Kesiswaan</option><option>Kepegawaian</option><option>Kegiatan Sekolah</option><option>PPDB</option></select></div>
+                                                <div><label className="block text-xs font-semibold text-slate-700 mb-1">Status Publikasi</label><select value={pengumumanForm.status_publikasi} onChange={(e)=>setPengumumanForm({...pengumumanForm,status_publikasi:e.target.value})} className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm"><option value="Draft">Draft</option><option value="Published">Terbitkan</option></select></div>
+                                            </div>
+                                            <div><label className="block text-xs font-semibold text-slate-700 mb-1">Isi Pengumuman *</label><textarea required rows="5" value={pengumumanForm.isi} onChange={(e)=>setPengumumanForm({...pengumumanForm,isi:e.target.value})} className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm" placeholder="Tuliskan isi pengumuman secara lengkap..." /></div>
+                                            <div className="flex gap-2"><button type="submit" className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold">{editingPengumuman ? 'Simpan Perubahan' : 'Simpan Pengumuman'}</button>{editingPengumuman && <button type="button" onClick={()=>{setEditingPengumuman(null);setPengumumanForm({judul:'',kategori:'Umum',isi:'',status_publikasi:'Draft'});}} className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold">Batal Edit</button>}</div>
+                                        </form>
+                                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                                            <div className="p-4 border-b border-slate-200 font-bold text-slate-900">Daftar Pengumuman</div>
+                                            {pengumumanList.length === 0 ? <p className="p-6 text-sm text-slate-500">Belum ada data pengumuman.</p> : <div className="divide-y divide-slate-100">
+                                                {pengumumanList.map((item)=><div key={item.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                                    <div><div className="font-bold text-sm text-slate-900">{item.judul}</div><div className="text-xs text-slate-500 mt-1">{item.kategori} · {item.status_publikasi} · {item.tanggal_publikasi ? new Date(item.tanggal_publikasi).toLocaleDateString('id-ID') : ''}</div><p className="text-xs text-slate-600 mt-2 whitespace-pre-wrap">{item.isi}</p></div>
+                                                    <div className="flex gap-2 shrink-0"><button type="button" onClick={()=>{setEditingPengumuman(item);setPengumumanForm({judul:item.judul||'',kategori:item.kategori||'Umum',isi:item.isi||'',status_publikasi:item.status_publikasi||'Draft'});window.scrollTo({top:0,behavior:'smooth'});}} className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">Edit</button><button type="button" onClick={async()=>{if(!window.confirm('Hapus pengumuman ini?'))return;const {error}=await supabaseClient.from('pengumuman_sekolah').delete().eq('id',item.id);if(error){showToast('Gagal menghapus: '+error.message,'error');return;}setPengumumanList((prev)=>prev.filter((x)=>x.id!==item.id));showToast('Pengumuman dihapus.');}} className="px-3 py-2 rounded-lg bg-rose-50 text-rose-600 text-xs font-semibold">Hapus</button></div>
+                                                </div>)}
+                                            </div>}
                                         </div>
                                     </div>
                                 )}
