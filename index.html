@@ -711,20 +711,35 @@
             const [uploadedFilesDemo, setUploadedFilesDemo] = useState([]);
 
             const handleFileUploadDemo = (e) => {
-                const files = Array.from(e.target.files);
+                const files = Array.from(e.target.files || []);
                 if (!files.length) return;
 
-                const formatted = files.map((f) => ({
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+                const validFiles = files.filter((file) => {
+                    if (!allowedTypes.includes(file.type)) {
+                        showToast('Format foto harus JPG, PNG, atau WEBP.', 'error');
+                        return false;
+                    }
+                    if (file.size > 25 * 1024 * 1024) {
+                        showToast('Ukuran setiap foto maksimal 25 MB.', 'error');
+                        return false;
+                    }
+                    return true;
+                });
+
+                const formatted = validFiles.map((f) => ({
+                    file: f,
                     name: f.name,
                     size: (f.size / (1024 * 1024)).toFixed(2) + ' MB',
-                    type: f.type.split('/')[1]?.toUpperCase() || 'FILE',
-                    preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null
+                    type: f.type.split('/')[1]?.toUpperCase() || 'IMAGE',
+                    preview: URL.createObjectURL(f)
                 }));
 
-                setUploadedFilesDemo([...uploadedFilesDemo, ...formatted]);
+                setUploadedFilesDemo((prev) => [...prev, ...formatted]);
                 if (formatted[0]?.preview && !dokForm.foto_sampul_url) {
-                    setDokForm({ ...dokForm, foto_sampul_url: formatted[0].preview });
+                    setDokForm((prev) => ({ ...prev, foto_sampul_url: formatted[0].preview }));
                 }
+                e.target.value = '';
             };
 
             const removeUploadedFile = (idx) => {
@@ -754,6 +769,36 @@
                     return;
                 }
 
+                let fotoSampulUrl = dokForm.foto_sampul_url?.startsWith('blob:')
+                    ? (editingDokumentasi?.foto_sampul_url || null)
+                    : (dokForm.foto_sampul_url || editingDokumentasi?.foto_sampul_url || null);
+
+                const coverFile = uploadedFilesDemo.find((item) => item.file)?.file;
+                if (coverFile) {
+                    const safeName = coverFile.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+                    const storagePath = `${crypto.randomUUID()}-${safeName}`;
+                    const { data: uploadData, error: uploadError } = await supabaseClient
+                        .storage
+                        .from('dokumentasi')
+                        .upload(storagePath, coverFile, {
+                            cacheControl: '3600',
+                            upsert: false,
+                            contentType: coverFile.type
+                        });
+
+                    if (uploadError) {
+                        console.error('Gagal mengunggah foto dokumentasi:', uploadError.message);
+                        showToast('Foto gagal diunggah: ' + uploadError.message, 'error');
+                        return;
+                    }
+
+                    const { data: publicUrlData } = supabaseClient
+                        .storage
+                        .from('dokumentasi')
+                        .getPublicUrl(uploadData.path);
+                    fotoSampulUrl = publicUrlData?.publicUrl || null;
+                }
+
                 const payload = {
                     nama_kegiatan: dokForm.nama_kegiatan.trim(),
                     kategori: dokForm.kategori || 'Kegiatan Sekolah',
@@ -761,9 +806,9 @@
                     lokasi: dokForm.lokasi.trim(),
                     penanggung_jawab: dokForm.penanggung_jawab?.trim() || null,
                     deskripsi: dokForm.deskripsi?.trim() || null,
-                    foto_sampul_url: dokForm.foto_sampul_url?.startsWith('blob:') ? (editingDokumentasi?.foto_sampul_url || null) : (dokForm.foto_sampul_url || editingDokumentasi?.foto_sampul_url || null),
+                    foto_sampul_url: fotoSampulUrl,
                     status_publikasi: editingDokumentasi?.status_publikasi || 'Published',
-                    files_count: editingDokumentasi?.files_count || 0
+                    files_count: uploadedFilesDemo.length || editingDokumentasi?.files_count || 0
                 };
 
                 let savedRow;
@@ -795,10 +840,10 @@
 
                 if (editingDokumentasi) {
                     setDokumentasiList((prev) => prev.map((d) => d.id === savedRow.id ? savedRow : d));
-                    showToast('Dokumentasi berhasil diperbarui dan disimpan ke Supabase!');
+                    showToast('Dokumentasi berhasil diperbarui dan foto tersimpan di Supabase Storage!');
                 } else {
                     setDokumentasiList((prev) => [savedRow, ...prev]);
-                    showToast('Dokumentasi berhasil disimpan ke Supabase!');
+                    showToast('Dokumentasi dan foto berhasil disimpan ke Supabase!');
                 }
 
                 setIsDokumentasiModalOpen(false);
@@ -2601,13 +2646,13 @@
                                             <input
                                                 type="file"
                                                 multiple
-                                                accept="image/*,.pdf,.docx,.xlsx"
+                                                accept="image/jpeg,image/png,image/webp"
                                                 onChange={handleFileUploadDemo}
                                                 className="absolute inset-0 opacity-0 cursor-pointer"
                                             />
                                             <Icon name="upload" className="w-8 h-8 text-cyan-600 mx-auto mb-2" />
                                             <div className="font-bold text-slate-900">Drag & Drop file di sini atau Klik Pilih Berkas</div>
-                                            <div className="text-[11px] text-slate-400 mt-1">Mendukung JPG, PNG, PDF, DOCX (Maks. 25MB)</div>
+                                            <div className="text-[11px] text-slate-400 mt-1">Mendukung JPG, PNG, WEBP (Maks. 25MB per foto)</div>
                                         </div>
 
                                         {uploadedFilesDemo.length > 0 && (
