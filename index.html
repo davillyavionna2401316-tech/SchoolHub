@@ -274,6 +274,7 @@
 
             // Notulen Archive Modal Detail State
             const [selectedNotulenDetail, setSelectedNotulenDetail] = useState(null);
+            const [notulenSearch, setNotulenSearch] = useState('');
             const [editingNotulen, setEditingNotulen] = useState(null);
 
             // Audio Speech Recognition State
@@ -2023,6 +2024,13 @@
                                         </div>
 
                                         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                            <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                                                <div className="relative flex-1 max-w-xl">
+                                                    <Icon name="search" className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                                    <input type="search" value={notulenSearch} onChange={(e) => setNotulenSearch(e.target.value)} placeholder="Cari nomor, judul rapat, jenis rapat, atau notulis..." className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500" />
+                                                </div>
+                                                <span className="text-xs text-slate-500">{notulenList.filter((n) => [n.nomor_notulen, n.id, n.judul_rapat, n.jenis_rapat, n.notulis_nama].some((v) => String(v || '').toLowerCase().includes(notulenSearch.trim().toLowerCase()))).length} hasil ditemukan</span>
+                                            </div>
                                             <table className="w-full text-left text-xs text-slate-600">
                                                 <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                                                     <tr>
@@ -2034,7 +2042,7 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">
-                                                    {notulenList.map((n) => (
+                                                    {notulenList.filter((n) => [n.nomor_notulen, n.id, n.judul_rapat, n.jenis_rapat, n.notulis_nama].some((v) => String(v || '').toLowerCase().includes(notulenSearch.trim().toLowerCase()))).map((n) => (
                                                         <tr key={n.id} className="hover:bg-slate-50">
                                                             <td className="py-3 px-4 font-mono font-bold text-blue-600">{n.id}</td>
                                                             <td className="py-3 px-4 font-bold text-slate-900">{n.judul_rapat}</td>
@@ -2051,6 +2059,7 @@
                                                     ))}
                                                 </tbody>
                                             </table>
+                                            {notulenList.length > 0 && notulenList.filter((n) => [n.nomor_notulen, n.id, n.judul_rapat, n.jenis_rapat, n.notulis_nama].some((v) => String(v || '').toLowerCase().includes(notulenSearch.trim().toLowerCase()))).length === 0 && <p className="p-6 text-center text-xs text-slate-500">Tidak ada notulen yang sesuai dengan pencarian.</p>}
                                         </div>
                                     </div>
                                 )}
