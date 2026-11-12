@@ -413,6 +413,16 @@
                         else if (minutesError) console.error('Gagal memuat notulen:', minutesError.message);
                     }
                 };
+                const guestbookChannel = supabaseClient
+                    .channel('buku-tamu-realtime')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'buku_tamu' }, async () => {
+                        const { data: guests, error: guestsError } = await supabaseClient
+                            .from('buku_tamu').select('*').order('date', { ascending: false });
+                        if (!guestsError) setGuestbookList(guests || []);
+                        else console.error('Gagal memperbarui buku tamu secara realtime:', guestsError.message);
+                    })
+                    .subscribe();
+
                 restoreSession();
                 const { data: authListener } = supabaseClient.auth.onAuthStateChange((_event, session) => {
                     if (!mounted) return;
@@ -421,6 +431,7 @@
                 return () => {
                     mounted = false;
                     authListener?.subscription?.unsubscribe();
+                    supabaseClient.removeChannel(guestbookChannel);
                 };
             }, []);
 
@@ -1316,6 +1327,7 @@
                                             </form>
                                         </div>
 
+                                        {isLoggedIn && (
                                         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                                             <h3 className="font-bold text-base text-slate-900 mb-4 flex items-center justify-between">
                                                 <span>Daftar Kunjungan Terbaru</span>
@@ -1344,6 +1356,7 @@
                                                 </table>
                                             </div>
                                         </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
