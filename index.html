@@ -913,7 +913,7 @@
                     const blob = await Packer.toBlob(documentFile);
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
-                    const filename = title.replace(/[^a-z0-9\\-_ ]/gi, '').trim().replace(/\\s+/g, '-').slice(0, 60) || 'notulen-rapat';
+                    const filename = title.replace(/[^a-z0-9 _-]/gi, '').trim().replace(/\s+/g, '-').slice(0, 60) || 'notulen-rapat';
                     link.href = url;
                     link.download = 'Notulen-' + filename + '.docx';
                     document.body.appendChild(link);
